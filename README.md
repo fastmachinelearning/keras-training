@@ -18,6 +18,8 @@ Each time you log in set things up:
 source setup.sh
 ```
 
+All of the data ntuple files are available here: https://cernbox.cern.ch/index.php/s/AgzB93y3ac0yuId
+
 To add the truth values and flatten the trees (you can skip this step)
 ```bash
 cd ~/keras-training/convert
@@ -35,7 +37,7 @@ python convert.py -t t_allpar_new \
 ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.root
 ```
 
-You can also copy this file directly from: `root://cmseos.fnal.gov//eos/uscms/store/user/woodson/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z`
+You can also copy this file directly from: https://cernbox.cern.ch/index.php/s/aGjXWDrDpugHeMf
 
 To run a simple training:
 ```bash
