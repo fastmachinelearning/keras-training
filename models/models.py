@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input
 from keras.models import Model
 
 def dense_model(Inputs,nclasses,dropoutRate=0.25):
@@ -45,3 +45,34 @@ def linear_model(Inputs, nclasses):
     predictions = Dense(nclasses, activation='linear', kernel_initializer='lecun_uniform', name='output_linear')(Inputs)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
+
+def conv1d_model(Inputs, nclasses):
+    """
+    Conv1D model, kernel size 1
+    """
+    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=False, name='conv1_relu',
+               activation = 'relu')(Inputs)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+
+    return model
+
+def conv2d_model(Inputs, nclasses):
+    """
+    Conv2D model, kernel size (3,3)
+    """
+    x = Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding='same',
+               kernel_initializer='he_normal', use_bias=False, name='conv2_relu',
+               activation = 'relu')(Inputs)
+    x = Flatten()(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+
+    return model
+
+
+if __name__ == '__main__':
+    print conv1d_model(Input(shape=(100,10,)), 2).summary()
+    
+    print conv2d_model(Input(shape=(10,10,3,)), 2).summary()
