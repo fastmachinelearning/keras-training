@@ -14,6 +14,8 @@ import pandas as pd
 from keras.utils.conv_utils import convert_kernel
 import tensorflow as tf
 from constraints import ZeroSomeWeights
+from keras.utils.generic_utils import get_custom_objects
+get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''

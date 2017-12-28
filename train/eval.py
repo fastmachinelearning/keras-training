@@ -13,6 +13,8 @@ from sklearn.metrics import roc_curve, auc
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from constraints import ZeroSomeWeights
+from keras.utils.generic_utils import get_custom_objects
+get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
