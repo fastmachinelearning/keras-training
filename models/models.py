@@ -26,7 +26,7 @@ def two_layer_model(Inputs, nclasses, l1Reg=0):
     One hidden layer model
     """
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(Inputs)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax', W_regularizer=l1(l1Reg))(x)
+    predictions = Dense(nclasses, activation='sigmoid', kernel_initializer='lecun_uniform', name = 'output_sigmoid', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
@@ -35,7 +35,7 @@ def two_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     One hidden layer model
     """
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['fc1_relu'][()].tolist()))(Inputs)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
+    predictions = Dense(nclasses, activation='sigmoid', kernel_initializer='lecun_uniform', name = 'output_sigmoid', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 

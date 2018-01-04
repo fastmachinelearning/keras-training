@@ -30,9 +30,8 @@ if __name__ == "__main__":
     parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
     parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
     parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='train_simple/', help='output directory')
-    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config.yml', help='configuration file')
+    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config_threelayer.yml', help='configuration file')
     (options,args) = parser.parse_args()
-
      
     yamlConfig = parse_config(options.config)
     
@@ -40,7 +39,6 @@ if __name__ == "__main__":
         raise Exception('output directory must not exists yet')
     else:
         os.mkdir(options.outputDir)
-    
 
     # To use one data file:
     h5File = h5py.File(options.inputFile)
@@ -70,8 +68,17 @@ if __name__ == "__main__":
 
     #from models import three_layer_model
     model = getattr(models, yamlConfig['KerasModel'])
+    
 
     keras_model = model(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'] )
+
+    outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
+    jsonString = keras_model.to_json()
+    import json
+    with outfile:
+        obj = json.loads(jsonString)
+        json.dump(obj, outfile, sort_keys=True,indent=4, separators=(',', ': '))
+        outfile.write('\n')
 
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)

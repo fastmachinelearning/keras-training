@@ -57,7 +57,7 @@ python eval.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
 -m train_simple/KERAS_check_best_model.h5 \
 -c train_config_threelayer.yml \
--o eval_simple /
+-o eval_simple/
 ```
 
 ## Pruning and retraining

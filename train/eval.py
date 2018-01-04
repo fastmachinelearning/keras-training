@@ -19,6 +19,7 @@ from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 import yaml
+from train import parse_config
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -27,7 +28,7 @@ def makeRoc(features, features_val, labels, labels_val, model, outputDir):
     print 'in makeRoc()'
         
     predict_test = model.predict(features_val)
-    
+
     df = pd.DataFrame(features_val)
     df.columns = features
 
@@ -78,14 +79,15 @@ if __name__ == "__main__":
     parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
     parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
     parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='eval_simple/', help='output directory')
-    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config.yml', help='configuration file')
+    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config_threelayer.yml', help='configuration file')
     (options,args) = parser.parse_args()
 
+    yamlConfig = parse_config(options.config)
+    
     if os.path.isdir(options.outputDir):
         raise Exception('output directory must not exists yet')
     else:
         os.mkdir(options.outputDir)
-
 
     # To use one data file:
     h5File = h5py.File(options.inputFile)
