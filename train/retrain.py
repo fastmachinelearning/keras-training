@@ -18,6 +18,8 @@ from sklearn.model_selection import train_test_split
 
 if __name__ == "__main__":
     parser = OptionParser()
+    parser.add_option('-m','--model'   ,action='store',type='string',dest='inputModel'   ,default='prune_simple/pruned_model.h5', help='input model')
+    parser.add_option('-d','--drop-weights'   ,action='store',type='string',dest='dropWeights'   ,default='prune_simple/pruned_model_drop_weights.h5', help='dropped weights h5 file')
     parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
     parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
     parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='train_simple/', help='output directory')
@@ -57,14 +59,17 @@ if __name__ == "__main__":
     print X_test.shape
     print y_test.shape
 
-    from models import three_layer_model
+    from models import three_layer_model_constraint
 
-    keras_model = three_layer_model(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=0.01 )
+    # Instantiate new model with added custom constraints
+    keras_model = three_layer_model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=0.01, h5fName = options.dropWeights )
 
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)
     keras_model.compile(optimizer=adam, loss=['categorical_crossentropy'], metrics=['accuracy'])
 
+    # Load pre-trained weights!
+    keras_model.load_weights(options.inputModel, by_name=True)
         
     callbacks=all_callbacks(stop_patience=1000, 
                             lr_factor=0.5,

@@ -10,8 +10,12 @@ import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
-from root_numpy import array2root
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from constraints import ZeroSomeWeights
+from keras.utils.generic_utils import get_custom_objects
+get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
+
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
@@ -36,18 +40,16 @@ def makeRoc(features, features_val, labels, labels_val, model, outputDir):
 
         auc1[label] = auc(fpr[label], tpr[label])
             
-        plt.plot(tpr[label],fpr[label],label='%s tagger, auc = %.1f%%'%(label,auc1[label]*100))
+        plt.plot(tpr[label],fpr[label],label='%s tagger, auc = %.1f%%'%(label,auc1[label]*100.))
     plt.semilogy()
     plt.xlabel("sig. efficiency")
     plt.ylabel("bkg. mistag rate")
     plt.ylim(0.001,1)
     plt.grid(True)
-    plt.legend()
+    plt.legend(loc='upper left')
     plt.savefig('%s/ROC.pdf'%(options.outputDir))
-    
-    
 
-
+    
 def _byteify(data, ignore_dicts = False):
     # if this is a unicode string, return its string representation
     if isinstance(data, unicode):
@@ -102,37 +104,44 @@ if __name__ == "__main__":
     features_val = features_df.values
     labels_val = labels_df.values
     
-    model = load_model(options.inputModel)
+    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
+    print X_train_val.shape
+    print y_train_val.shape
+    print X_test.shape
+    print y_test.shape
     
-    makeRoc(features, features_val, labels, labels_val, model, options.outputDir)
+    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
+
+    makeRoc(features, X_test, labels, y_test, model, options.outputDir)
 
     import json
 
-    f = open('%s/full_info.log'%os.path.dirname(options.inputModel))
-    myListOfDicts = json.load(f, object_hook=_byteify)
-    myDictOfLists = {}
-    for key, val in myListOfDicts[0].iteritems():
-        myDictOfLists[key] = []
-    for i, myDict in enumerate(myListOfDicts):
-        for key, val in myDict.iteritems():
-            myDictOfLists[key].append(myDict[key])
+    if os.path.isfile('%s/full_info.log'%os.path.dirname(options.inputModel)):
+        f = open('%s/full_info.log'%os.path.dirname(options.inputModel))
+        myListOfDicts = json.load(f, object_hook=_byteify)
+        myDictOfLists = {}
+        for key, val in myListOfDicts[0].iteritems():
+            myDictOfLists[key] = []
+        for i, myDict in enumerate(myListOfDicts):
+            for key, val in myDict.iteritems():
+                myDictOfLists[key].append(myDict[key])
 
-    plt.figure()
-    val_loss = np.asarray(myDictOfLists['val_loss'])
-    loss = np.asarray(myDictOfLists['loss'])
-    plt.plot(val_loss, label='validation')
-    plt.plot(loss, label='train')
-    plt.legend()
-    plt.xlabel('epoch')
-    plt.ylabel('loss')
-    plt.savefig(options.outputDir+"/loss.pdf")
+        plt.figure()
+        val_loss = np.asarray(myDictOfLists['val_loss'])
+        loss = np.asarray(myDictOfLists['loss'])
+        plt.plot(val_loss, label='validation')
+        plt.plot(loss, label='train')
+        plt.legend()
+        plt.xlabel('epoch')
+        plt.ylabel('loss')
+        plt.savefig(options.outputDir+"/loss.pdf")
 
-    plt.figure()
-    val_acc = np.asarray(myDictOfLists['val_acc'])
-    acc = np.asarray(myDictOfLists['acc'])
-    plt.plot(val_acc, label='validation')
-    plt.plot(acc, label='train')
-    plt.legend()
-    plt.xlabel('epoch')
-    plt.ylabel('accuracy')
-    plt.savefig(options.outputDir+"/acc.pdf")
+        plt.figure()
+        val_acc = np.asarray(myDictOfLists['val_acc'])
+        acc = np.asarray(myDictOfLists['acc'])
+        plt.plot(val_acc, label='validation')
+        plt.plot(acc, label='train')
+        plt.legend()
+        plt.xlabel('epoch')
+        plt.ylabel('accuracy')
+        plt.savefig(options.outputDir+"/acc.pdf")
