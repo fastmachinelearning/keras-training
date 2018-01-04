@@ -1,0 +1,19 @@
+Inputs:
+    - j_zlogz
+    - j_c1_b0_mmdt
+    - j_c1_b1_mmdt
+    - j_c2_b1_mmdt
+    - j_d2_b1_mmdt
+    - j_d2_a1_b1_mmdt
+    - j_m2_b1_mmdt
+    - j_n2_b1_mmdt
+    - j_mass_mmdt
+    - j_multiplicity
+    
+Labels:
+    - 'j_t'
+    
+KerasModel: two_layer_model
+KerasModelRetrain: two_layer_model_constraint
+KerasLoss: binary_crossentropy
+L1Reg: 0

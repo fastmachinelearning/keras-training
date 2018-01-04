@@ -4,7 +4,7 @@ from keras.regularizers import l1
 import h5py
 from constraints import *
 
-def dense_model(Inputs,nclasses,dropoutRate=0.25):
+def dense_model(Inputs, nclasses, l1Reg=0, dropoutRate=0.25):
     """
     Dense matrix, defaults similar to 2016 DeepCSV training
     """
@@ -21,12 +21,21 @@ def dense_model(Inputs,nclasses,dropoutRate=0.25):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
-def two_layer_model(Inputs, nclasses):
+def two_layer_model(Inputs, nclasses, l1Reg=0):
     """
     One hidden layer model
     """
-    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu')(Inputs)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax')(x)
+    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(Inputs)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax', W_regularizer=l1(l1Reg))(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    return model
+
+def two_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
+    """
+    One hidden layer model
+    """
+    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['fc1_relu'][()].tolist()))(Inputs)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
@@ -37,7 +46,7 @@ def three_layer_model(Inputs, nclasses, l1Reg=0):
     x = Dense(64, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(Inputs)
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc2_relu', W_regularizer=l1(l1Reg))(x)
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc3_relu', W_regularizer=l1(l1Reg))(x)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
@@ -49,11 +58,11 @@ def three_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     x = Dense(64, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['fc1_relu'][()].tolist()))(Inputs)
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc2_relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['fc2_relu'][()].tolist()))(x)
     x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc3_relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['fc3_relu'][()].tolist()))(x)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
-def linear_model(Inputs, nclasses):
+def linear_model(Inputs, nclasses, l1Reg=0):
     """
     Linear model
     """
@@ -73,7 +82,7 @@ def conv1d_model(Inputs, nclasses):
 
     return model
 
-def conv2d_model(Inputs, nclasses):
+def conv2d_model(Inputs, nclasses, l1Reg=0):
     """
     Conv2D model, kernel size (3,3)
     """

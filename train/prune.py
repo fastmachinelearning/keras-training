@@ -33,6 +33,7 @@ if __name__ == "__main__":
     weightsPerLayer = {}
     droppedPerLayer = {}
     binaryTensorPerLayer = {}
+    allWeights = []
     for layer in model.layers:     
         droppedPerLayer[layer.name] = []
         if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
@@ -58,6 +59,10 @@ if __name__ == "__main__":
                 binaryTensorPerLayer[layer.name] = np.ones(my_weights.shape)
                 while not it.finished:
                     w = it[0]
+                    if options.relative_weight_max is not None:
+                        allWeights.append(abs(w)/tensor_max)
+                    if options.absolute_weight_max is not None:
+                        allWeights.append(abs(w))                        
                     if options.relative_weight_max is not None and abs(w)/tensor_max < options.relative_weight_max:
                         #print "small relative weight %e/%e = %e -> 0"%(abs(w), tensor_max, abs(w)/tensor_max)
                         w[...] = 0
@@ -84,8 +89,47 @@ if __name__ == "__main__":
     model.save(options.outputModel)
     model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
 
+    # save binary tensor in h5 file 
     h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'))
     for layer, binary_tensor in binaryTensorPerLayer.iteritems():
         h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
     h5f.close()
+
+    # plot the distribution of weights
+    allWeightsArray = np.array(allWeights)
+    percentiles = [5,32,50,68,95]
+    vlines = np.percentile(allWeightsArray,percentiles,axis=-1)
+    xmin = np.amin(allWeightsArray)
+    xmax = np.amax(allWeightsArray)
+    bins = np.linspace(xmin, xmax, 100)
+    logbins = np.geomspace(xmin, xmax, 100)
+    
+    plt.figure()
+    plt.hist(allWeightsArray,bins=bins)
+    axis = plt.gca()
+    ymin, ymax = axis.get_ylim()
+    for vline, percentile in zip(vlines, percentiles):
+        plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
+        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
+    plt.ylabel('Number of Weights')
+    if options.absolute_weight_max:
+        plt.xlabel('Absolute Weights')
+    elif options.relative_weight_max:
+        plt.xlabel('Absolute Relative Weights')
+    plt.savefig(options.outputModel.replace('.h5','_weight_histogram.pdf'))
+
+        
+    plt.figure()
+    plt.hist(allWeightsArray,bins=logbins)
+    plt.semilogx()
+    for vline, percentile in zip(vlines, percentiles):
+        plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
+        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
+    plt.ylabel('Number of Weights')
+    if options.absolute_weight_max:
+        plt.xlabel('Absolute Weights')
+    elif options.relative_weight_max:
+        plt.xlabel('Absolute Relative Weights')
+    plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))
+
     

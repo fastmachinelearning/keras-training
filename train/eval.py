@@ -5,6 +5,9 @@ from keras.models import load_model, Model
 from argparse import ArgumentParser
 from keras import backend as K
 import numpy as np
+# fix random seed for reproducibility
+seed = 42
+np.random.seed(seed)
 import h5py
 import matplotlib
 matplotlib.use('agg')
@@ -15,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
+import yaml
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -74,6 +78,7 @@ if __name__ == "__main__":
     parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
     parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
     parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='eval_simple/', help='output directory')
+    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config.yml', help='configuration file')
     (options,args) = parser.parse_args()
 
     if os.path.isdir(options.outputDir):
@@ -89,12 +94,10 @@ if __name__ == "__main__":
     print treeArray.dtype.names
     
     # List of features to use
-    features = ['j_zlogz', 'j_c1_b0_mmdt', 'j_c1_b1_mmdt', 'j_c1_b2_mmdt', 'j_c2_b1_mmdt', 'j_c2_b2_mmdt',
-                'j_d2_b1_mmdt', 'j_d2_b2_mmdt', 'j_d2_a1_b1_mmdt', 'j_d2_a1_b2_mmdt', 'j_m2_b1_mmdt',
-                'j_m2_b2_mmdt', 'j_n2_b1_mmdt', 'j_n2_b2_mmdt', 'j_mass_mmdt', 'j_multiplicity']
+    features = yamlConfig['Inputs']
     
     # List of labels to use
-    labels = ['j_g', 'j_q', 'j_w', 'j_z', 'j_t']
+    labels = yamlConfig['Labels']
 
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)

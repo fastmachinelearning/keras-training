@@ -47,6 +47,7 @@ To run a simple training:
 cd ~/keras-training/train
 python train.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
+-c train_config_threelayer.yml \
 -o train_simple/
 ```
 
@@ -55,6 +56,7 @@ and evaluate the training:
 python eval.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
 -m train_simple/KERAS_check_best_model.h5 \
+-c train_config_threelayer.yml \
 -o eval_simple /
 ```
 
@@ -63,7 +65,7 @@ To prune the trained model by removing weights below a certain
 threshold (relative weight < 0.2):
 ```bash
 mkdir prune_simple_relwmax2e-1
-python prune.py train_simple/KERAS_check_best_model.h5 \
+python prune.py -m train_simple/KERAS_check_best_model.h5 \
 --relative-weight-max 2e-1 \
 -o prune_simple_relwmax2e-1/pruned_model.h5
 ```
@@ -73,6 +75,7 @@ and evaluate the pruned model:
 python eval.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
 -m prune_simple_relwmax2e-1/pruned_model.h5 \
+-c train_config_threelayer.yml \
 -o eval_simple_relwmax2e-1/
 ```
 
@@ -82,6 +85,7 @@ python retrain.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
 -o retrain_simple_relwmax2e-1 \
 -m prune_simple_relwmax2e-1/pruned_model.h5  \
+-c train_config_threelayer.yml \
 -d prune_simple_relwmax2e-1/pruned_model_drop_weights.h5
 ```
 
@@ -90,6 +94,7 @@ and evaluate the pruned, retrained model:
 python eval.py -t t_allpar_new \
 -i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
 -m retrain_simple_relwmax2e-1/KERAS_check_best_model.h5 \
+-c train_config_threelayer.yml \
 -o eval_retrain_simple_relwmax2e-1/
 ```
 

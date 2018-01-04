@@ -12,6 +12,8 @@ from callbacks import all_callbacks
 import pandas as pd
 from keras.layers import Input
 from sklearn.model_selection import train_test_split
+import yaml
+import models
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -38,12 +40,10 @@ if __name__ == "__main__":
     print treeArray.dtype.names
     
     # List of features to use
-    features = ['j_zlogz', 'j_c1_b0_mmdt', 'j_c1_b1_mmdt', 'j_c1_b2_mmdt', 'j_c2_b1_mmdt', 'j_c2_b2_mmdt',
-                'j_d2_b1_mmdt', 'j_d2_b2_mmdt', 'j_d2_a1_b1_mmdt', 'j_d2_a1_b2_mmdt', 'j_m2_b1_mmdt',
-                'j_m2_b2_mmdt', 'j_n2_b1_mmdt', 'j_n2_b2_mmdt', 'j_mass_mmdt', 'j_multiplicity']
+    features = yamlConfig['Inputs']
     
     # List of labels to use
-    labels = ['j_g', 'j_q', 'j_w', 'j_z', 'j_t']
+    labels = yamlConfig['Labels']
 
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)
@@ -59,10 +59,11 @@ if __name__ == "__main__":
     print X_test.shape
     print y_test.shape
 
-    from models import three_layer_model_constraint
+    #from models import three_layer_model_constraint
+    model_constraint = getattr(models, yamlConfig['KerasModelRetrain'])
 
     # Instantiate new model with added custom constraints
-    keras_model = three_layer_model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=0.01, h5fName = options.dropWeights )
+    keras_model = model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
 
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)

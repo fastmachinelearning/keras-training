@@ -12,17 +12,30 @@ from callbacks import all_callbacks
 import pandas as pd
 from keras.layers import Input
 from sklearn.model_selection import train_test_split
+import yaml
+import models
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
+## Config module
+def parse_config(config_file) :
+
+    print "Loading configuration from " + str(config_file)
+    config = open(config_file, 'r')
+    return yaml.load(config)
 
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
     parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
     parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='train_simple/', help='output directory')
+    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config.yml', help='configuration file')
     (options,args) = parser.parse_args()
 
+     
+    yamlConfig = parse_config(options.config)
+    
     if os.path.isdir(options.outputDir):
         raise Exception('output directory must not exists yet')
     else:
@@ -36,12 +49,10 @@ if __name__ == "__main__":
     print treeArray.dtype.names
     
     # List of features to use
-    features = ['j_zlogz', 'j_c1_b0_mmdt', 'j_c1_b1_mmdt', 'j_c1_b2_mmdt', 'j_c2_b1_mmdt', 'j_c2_b2_mmdt',
-                'j_d2_b1_mmdt', 'j_d2_b2_mmdt', 'j_d2_a1_b1_mmdt', 'j_d2_a1_b2_mmdt', 'j_m2_b1_mmdt',
-                'j_m2_b2_mmdt', 'j_n2_b1_mmdt', 'j_n2_b2_mmdt', 'j_mass_mmdt', 'j_multiplicity']
+    features = yamlConfig['Inputs']
     
     # List of labels to use
-    labels = ['j_g', 'j_q', 'j_w', 'j_z', 'j_t']
+    labels = yamlConfig['Labels']
 
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)
@@ -57,13 +68,14 @@ if __name__ == "__main__":
     print X_test.shape
     print y_test.shape
 
-    from models import three_layer_model
+    #from models import three_layer_model
+    model = getattr(models, yamlConfig['KerasModel'])
 
-    keras_model = three_layer_model(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=0.01 )
+    keras_model = model(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'] )
 
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)
-    keras_model.compile(optimizer=adam, loss=['categorical_crossentropy'], metrics=['accuracy'])
+    keras_model.compile(optimizer=adam, loss=[yamlConfig['KerasLoss']], metrics=['accuracy'])
 
         
     callbacks=all_callbacks(stop_patience=1000, 
