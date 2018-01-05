@@ -19,12 +19,39 @@ get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+def getWeightArray(model):
+    allWeights = []
+    for layer in model.layers:         
+        if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
+            original_w = layer.get_weights()
+            for my_weights in original_w:                
+                if len(my_weights.shape) < 2: #bias term
+                    continue
+                #l1norm = tf.norm(my_weights,ord=1)
+                elif len(my_weights.shape) == 2: # Dense or Conv1D (?)
+                    tensor_abs = tf.abs(my_weights)
+                    tensor_reduce_max_1 = tf.reduce_max(tensor_abs,axis=-1)
+                    tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
+                elif len(my_weights.shape) == 3: # Conv2D
+                    tensor_abs = tf.abs(my_weights)
+                    tensor_reduce_max_0 = tf.reduce_max(tensor_abs,axis=-1)
+                    tensor_reduce_max_1 = tf.reduce_max(tensor_reduce_max_0,axis=-1)
+                    tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
+                with tf.Session():
+                    #l1norm_val = float(l1norm.eval())
+                    tensor_max = float(tensor_reduce_max_2.eval())
+                it = np.nditer(my_weights, flags=['multi_index'], op_flags=['readwrite'])   
+                while not it.finished:
+                    w = it[0]
+                    allWeights.append(abs(w)/tensor_max)
+                    it.iternext()
+    return np.array(allWeights)
 
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option('-m','--model'   ,action='store',type='string',dest='inputModel'   ,default='train_simple/KERAS_check_best_model.h5', help='input model')
     parser.add_option('--relative-weight-max'   ,action='store',type='float',dest='relative_weight_max'   ,default=None, help='max relative weight')
-    parser.add_option('--absolute-weight-max'   ,action='store',type='float',dest='absolute_weight_max'   ,default=None, help='max absolute weight')
+    parser.add_option('--relative-weight-percentile'   ,action='store',type='float',dest='relative_weight_percentile'   ,default=None, help='relative weight percentile')
     parser.add_option('-o','--outputModel'   ,action='store',type='string',dest='outputModel'   ,default='prune_simple/pruned_model.h5', help='output directory')
     (options,args) = parser.parse_args()
 
@@ -33,7 +60,15 @@ if __name__ == "__main__":
     weightsPerLayer = {}
     droppedPerLayer = {}
     binaryTensorPerLayer = {}
-    allWeights = []
+    allWeightsArray = getWeightArray(model)
+    if options.relative_weight_percentile is not None:
+        relative_weight_max = np.percentile(allWeightsArray,options.relative_weight_percentile,axis=-1)
+    elif options.relative_weight_max is not None:
+        relative_weight_max = options.relative_weight_max
+    else:
+        print 'Need to set pruning criteria'
+        sys.exit()
+        
     for layer in model.layers:     
         droppedPerLayer[layer.name] = []
         if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
@@ -59,17 +94,8 @@ if __name__ == "__main__":
                 binaryTensorPerLayer[layer.name] = np.ones(my_weights.shape)
                 while not it.finished:
                     w = it[0]
-                    if options.relative_weight_max is not None:
-                        allWeights.append(abs(w)/tensor_max)
-                    if options.absolute_weight_max is not None:
-                        allWeights.append(abs(w))                        
-                    if options.relative_weight_max is not None and abs(w)/tensor_max < options.relative_weight_max:
+                    if abs(w)/tensor_max < relative_weight_max:
                         #print "small relative weight %e/%e = %e -> 0"%(abs(w), tensor_max, abs(w)/tensor_max)
-                        w[...] = 0
-                        droppedPerLayer[layer.name].append((it.multi_index, abs(w)))
-                        binaryTensorPerLayer[layer.name][it.multi_index] = 0
-                    if options.absolute_weight_max is not None and abs(w) < options.absolute_weight_max:
-                        #print "small absolute weight %e -> 0"% abs(w)
                         w[...] = 0
                         droppedPerLayer[layer.name].append((it.multi_index, abs(w)))
                         binaryTensorPerLayer[layer.name][it.multi_index] = 0
@@ -96,10 +122,9 @@ if __name__ == "__main__":
     h5f.close()
 
     # plot the distribution of weights
-    allWeightsArray = np.array(allWeights)
-    percentiles = [5,32,50,68,95]
+    percentiles = [5,16,50,84,95]
     vlines = np.percentile(allWeightsArray,percentiles,axis=-1)
-    xmin = np.amin(allWeightsArray)
+    xmin = np.amin(allWeightsArray[np.nonzero(allWeightsArray)])
     xmax = np.amax(allWeightsArray)
     bins = np.linspace(xmin, xmax, 100)
     logbins = np.geomspace(xmin, xmax, 100)
@@ -109,27 +134,25 @@ if __name__ == "__main__":
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile in zip(vlines, percentiles):
+        if vline < xmin: continue
         plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
         plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
     plt.ylabel('Number of Weights')
-    if options.absolute_weight_max:
-        plt.xlabel('Absolute Weights')
-    elif options.relative_weight_max:
-        plt.xlabel('Absolute Relative Weights')
+    plt.xlabel('Absolute Relative Weights')
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram.pdf'))
 
         
     plt.figure()
     plt.hist(allWeightsArray,bins=logbins)
     plt.semilogx()
+    axis = plt.gca()
+    ymin, ymax = axis.get_ylim()
     for vline, percentile in zip(vlines, percentiles):
+        if vline < xmin: continue
         plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
         plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
     plt.ylabel('Number of Weights')
-    if options.absolute_weight_max:
-        plt.xlabel('Absolute Weights')
-    elif options.relative_weight_max:
-        plt.xlabel('Absolute Relative Weights')
+    plt.xlabel('Absolute Relative Weights')
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))
 
     
