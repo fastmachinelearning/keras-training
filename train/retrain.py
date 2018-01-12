@@ -67,10 +67,18 @@ if __name__ == "__main__":
 
     # Instantiate new model with added custom constraints
     keras_model = model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
-
+    
+    outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
+    jsonString = keras_model.to_json()
+    import json
+    with outfile:
+        obj = json.loads(jsonString)
+        json.dump(obj, outfile, sort_keys=True,indent=4, separators=(',', ': '))
+        outfile.write('\n')
+        
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)
-    keras_model.compile(optimizer=adam, loss=['categorical_crossentropy'], metrics=['accuracy'])
+    keras_model.compile(optimizer=adam, loss=[yamlConfig['KerasLoss']], metrics=['accuracy'])
 
     # Load pre-trained weights!
     keras_model.load_weights(options.inputModel, by_name=True)
