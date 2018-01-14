@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
@@ -114,6 +115,11 @@ if __name__ == "__main__":
     print y_train_val.shape
     print X_test.shape
     print y_test.shape
+    
+    #Normalize
+    if yamlConfig['NormalizeInputs']:
+     scaler = preprocessing.StandardScaler().fit(X_train_val)
+     X_test = scaler.transform(X_test)    
     
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 

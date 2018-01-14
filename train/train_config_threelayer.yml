@@ -27,3 +27,4 @@ KerasModel: three_layer_model
 KerasModelRetrain: three_layer_model_constraint
 KerasLoss: categorical_crossentropy
 L1Reg: 0
+NormalizeInputs: 1 

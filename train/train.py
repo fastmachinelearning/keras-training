@@ -12,6 +12,7 @@ from callbacks import all_callbacks
 import pandas as pd
 from keras.layers import Input
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 import yaml
 import models
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)
     labels_df = pd.DataFrame(treeArray,columns=labels)
-    
+        
     # Convert to numpy array with correct shape
     features_val = features_df.values
     labels_val = labels_df.values
@@ -66,6 +67,13 @@ if __name__ == "__main__":
     print X_test.shape
     print y_test.shape
 
+
+    #Normalize inputs
+    if yamlConfig['NormalizeInputs']:
+     scaler = preprocessing.StandardScaler().fit(X_train_val)
+     X_train_val = scaler.transform(X_train_val)
+ 
+     
     #from models import three_layer_model
     model = getattr(models, yamlConfig['KerasModel'])
     

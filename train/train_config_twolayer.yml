@@ -17,3 +17,4 @@ KerasModel: two_layer_model
 KerasModelRetrain: two_layer_model_constraint
 KerasLoss: binary_crossentropy
 L1Reg: 0
+NormalizeInputs: 1
