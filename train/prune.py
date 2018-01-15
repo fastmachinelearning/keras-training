@@ -9,6 +9,7 @@ import h5py
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
+from scipy import stats
 from sklearn.metrics import roc_curve, auc
 import pandas as pd
 from keras.utils.conv_utils import convert_kernel
@@ -16,6 +17,7 @@ import tensorflow as tf
 from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
+
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -122,7 +124,12 @@ if __name__ == "__main__":
     h5f.close()
 
     # plot the distribution of weights
-    percentiles = [5,16,50,84,95]
+    if options.relative_weight_percentile is not None:
+        your_percentile = options.relative_weight_percentile
+    else:
+        your_percentile = stats.percentileofscore(allWeightsArray, relative_weight_max)
+    percentiles = [5,16,50,84,95,your_percentile]
+    colors = ['r','r','r','r','r','g']
     vlines = np.percentile(allWeightsArray,percentiles,axis=-1)
     xmin = np.amin(allWeightsArray[np.nonzero(allWeightsArray)])
     xmax = np.amax(allWeightsArray)
@@ -133,10 +140,10 @@ if __name__ == "__main__":
     plt.hist(allWeightsArray,bins=bins)
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
-    for vline, percentile in zip(vlines, percentiles):
+    for vline, percentile, color in zip(vlines, percentiles, colors):
         if vline < xmin: continue
-        plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
-        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
+        plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
+        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Relative Weights')
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram.pdf'))
@@ -147,10 +154,10 @@ if __name__ == "__main__":
     plt.semilogx()
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
-    for vline, percentile in zip(vlines, percentiles):
+    for vline, percentile, color in zip(vlines, percentiles, colors):
         if vline < xmin: continue
-        plt.axvline(vline, 0, 1, color='r', linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
-        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color='r', horizontalalignment='center')
+        plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
+        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Relative Weights')
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))

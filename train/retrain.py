@@ -12,6 +12,7 @@ from callbacks import all_callbacks
 import pandas as pd
 from keras.layers import Input
 from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
 import yaml
 from train import parse_config
 import models
@@ -61,6 +62,11 @@ if __name__ == "__main__":
     print y_train_val.shape
     print X_test.shape
     print y_test.shape
+
+    #Normalize inputs
+    if yamlConfig['NormalizeInputs']:
+        scaler = preprocessing.StandardScaler().fit(X_train_val)
+        X_train_val = scaler.transform(X_train_val)
 
     #from models import three_layer_model_constraint
     model_constraint = getattr(models, yamlConfig['KerasModelRetrain'])
