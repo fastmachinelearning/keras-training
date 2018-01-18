@@ -1,4 +1,5 @@
 from keras.constraints import *
+from keras.layers.merge import multiply
 
 class ZeroSomeWeights(Constraint):
     """ZeroSomeWeights weight constraint.
