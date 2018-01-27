@@ -3,7 +3,7 @@ from array import array
 import random
 import os
 from optparse import OptionParser
-
+import sys
 
 def getTree(myTree, oldTree, listOfBranches):
     
@@ -35,7 +35,9 @@ def addLeaves(tree,fileName):
     leaves = ["j_g/I","j_q/I","j_w/I","j_z/I","j_t/I","j_undef/I"]
     leafValues = [array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0])]
     newfile = rt.TFile.Open(fileName.replace('.root','_truth.root'),'RECREATE')
-    
+
+    particleBranches = [branch.GetName() for branch in tree.GetListOfBranches() if 'j1_' in branch.GetName()]
+
     tree.SetBranchStatus("*",1)
     # remove these branches
     tree.SetBranchStatus("njets",0)
@@ -73,14 +75,23 @@ def addLeaves(tree,fileName):
             leafValues[5][0] = 1
 
         for branch in tree.GetListOfBranches():
+            if branch.GetName() in particleBranches: continue
             if tree.GetBranchStatus(branch.GetName()):
                 obj = getattr(tree, branch.GetName())
                 if hasattr(obj, "__getitem__"):
                     setattr(s1, branch.GetName(), obj[0] )
                 else:
                     setattr(s1, branch.GetName(), obj )
-                    
-        newtree.Fill()
+
+        if len(particleBranches)>0:
+            nParticles = len(getattr(tree, particleBranches[0]))
+            particleObj = [getattr(tree, branchName) for branchName in particleBranches]
+            for i_particle in range(0, nParticles):
+                for branchName, obj in zip(particleBranches,particleObj):
+                    setattr(s1, branchName, obj[i_particle])
+                newtree.Fill()
+        else:
+            newtree.Fill()
     
         if i % 3000 == 0:
             print "%s of %s: %s" % (i,events,leafValues)

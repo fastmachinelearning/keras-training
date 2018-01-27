@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D
 from keras.models import Model
 from keras.regularizers import l1
 import h5py
@@ -70,13 +70,33 @@ def linear_model(Inputs, nclasses, l1Reg=0):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
-def conv1d_model(Inputs, nclasses):
+def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
     Conv1D model, kernel size 1
     """
     x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=False, name='conv1_relu',
-               activation = 'relu')(Inputs)
+               activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
+    x = SpatialDropout1D(rate=0.1)(x)
+    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=False, name='conv2_relu',
+               activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    x = SpatialDropout1D(rate=0.1)(x)
+    x = Flatten()(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print model.summary()
+    return model
+
+def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
+    """
+    Conv1D model, kernel size 1
+    """
+    h5f = h5py.File(h5fName)
+    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=False, name='conv1_relu',
+               activation = 'relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['conv1_relu'][()].tolist()))(Inputs)
+    x = Flatten()(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
     model = Model(inputs=Inputs, outputs=predictions)
 

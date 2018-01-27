@@ -30,9 +30,8 @@ def makeRoc(features, features_val, labels, labels_val, model, outputDir):
         
     predict_test = model.predict(features_val)
 
-    df = pd.DataFrame(features_val)
-    df.columns = features
-
+    df = pd.DataFrame()
+    
     fpr = {}
     tpr = {}
     auc1 = {}
@@ -105,24 +104,47 @@ if __name__ == "__main__":
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)
     labels_df = pd.DataFrame(treeArray,columns=labels)
+    if yamlConfig['ConvInputs']:
+        labels_df = labels_df.drop_duplicates()
     
     # Convert to numpy array with correct shape
     features_val = features_df.values
     labels_val = labels_df.values
+    if yamlConfig['ConvInputs']:
+        labels_val = labels_val[:,:-1] # drop the last label j_pt
     
-    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
-    print X_train_val.shape
-    print y_train_val.shape
-    print X_test.shape
-    print y_test.shape
+    X_train_val, X_test = train_test_split(features_val, test_size=0.2, random_state=42)
     
     #Normalize
     if yamlConfig['NormalizeInputs']:
      scaler = preprocessing.StandardScaler().fit(X_train_val)
-     X_test = scaler.transform(X_test)    
+     features_val = scaler.transform(features_val)
+     #X_test = scaler.transform(X_test)
+     
+    if yamlConfig['ConvInputs']:
+        features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
+        for i in range(0, len(labels_df)):
+            features_df_i = features_df[features_df['j_pt']==labels_df['j_pt'].iloc[i]]
+            index_values = features_df_i.index.values
+            #features_val_i = features_val[index_values[0]:index_values[-1]+1,:-1] # drop the last feature j_pt
+            features_val_i = features_val[np.array(index_values),:-1] # drop the last feature j_pt
+            nParticles = len(features_val_i)
+            if nParticles>yamlConfig['MaxParticles']:
+                features_val_i =  features_val_i[0:yamlConfig['MaxParticles'],:]
+            else:        
+                features_val_i = np.concatenate([features_val_i, np.zeros((yamlConfig['MaxParticles']-nParticles, len(features)-1))])
+                
+            features_2dval[i, :, :] = features_val_i
+
+        features_val = features_2dval
+
+
+    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
     
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 
+    if yamlConfig['ConvInputs']:
+        labels = labels[:-1]
     makeRoc(features, X_test, labels, y_test, model, options.outputDir)
 
     import json
