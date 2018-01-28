@@ -140,9 +140,8 @@ if __name__ == "__main__":
     if yamlConfig['NormalizeInputs'] and yamlConfig['ConvInputs']:
         reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
         scaler = preprocessing.StandardScaler().fit(reshape_X_train_val)
-        for p in range(X_train_val.shape[1]):
-            X_train_val[:,p,:] = scaler.transform(X_train_val[:,p,:])
-    
+        for p in range(X_test.shape[1]):
+            X_test[:,p,:] = scaler.transform(X_test[:,p,:])    
     
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 
