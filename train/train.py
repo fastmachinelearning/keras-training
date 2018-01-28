@@ -43,6 +43,7 @@ if __name__ == "__main__":
 
     # To use one data file:
     h5File = h5py.File(options.inputFile)
+    treeArray = h5File[options.tree][()]
     print treeArray.shape
 
     print treeArray.dtype.names

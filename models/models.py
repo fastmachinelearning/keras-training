@@ -74,16 +74,22 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
     Conv1D model, kernel size 1
     """
-    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=False, name='conv1_relu',
+    x = Conv1D(filters=64, kernel_size=1, strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
     x = SpatialDropout1D(rate=0.1)(x)
     x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=False, name='conv2_relu',
+               kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
+               activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    x = SpatialDropout1D(rate=0.1)(x)
+    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(x)
     x = SpatialDropout1D(rate=0.1)(x)
     x = Flatten()(x)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
+    x = Dropout(rate=0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     print model.summary()
     return model
@@ -97,7 +103,7 @@ def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
                kernel_initializer='he_normal', use_bias=False, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg), kernel_constraint = zero_some_weights(binary_tensor=h5f['conv1_relu'][()].tolist()))(Inputs)
     x = Flatten()(x)
-    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
 
     return model
