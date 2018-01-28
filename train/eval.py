@@ -112,14 +112,6 @@ if __name__ == "__main__":
     labels_val = labels_df.values
     if yamlConfig['ConvInputs']:
         labels_val = labels_val[:,:-1] # drop the last label j_pt
-    
-    X_train_val, X_test = train_test_split(features_val, test_size=0.2, random_state=42)
-    
-    #Normalize
-    if yamlConfig['NormalizeInputs']:
-     scaler = preprocessing.StandardScaler().fit(X_train_val)
-     features_val = scaler.transform(features_val)
-     #X_test = scaler.transform(X_test)
      
     if yamlConfig['ConvInputs']:
         features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
@@ -138,8 +130,19 @@ if __name__ == "__main__":
 
         features_val = features_2dval
 
-
     X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
+    
+    #Normalize inputs
+    if yamlConfig['NormalizeInputs'] and not yamlConfig['ConvInputs']:
+        scaler = preprocessing.StandardScaler().fit(X_train_val)
+        X_train_val = scaler.transform(X_train_val)
+    #Normalize conv inputs
+    if yamlConfig['NormalizeInputs'] and yamlConfig['ConvInputs']:
+        reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
+        scaler = preprocessing.StandardScaler().fit(reshape_X_train_val)
+        for p in range(X_train_val.shape[1]):
+            X_train_val[:,p,:] = scaler.transform(X_train_val[:,p,:])
+    
     
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 

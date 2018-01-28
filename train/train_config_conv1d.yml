@@ -1,8 +1,9 @@
 Inputs:
-    - j1_px
-    - j1_py
-    - j1_pz
-    - j1_e
+    - j1_ptrel
+    - j1_etarel
+    - j1_phirel
+    - j1_erel
+    - j1_deltaR
     - j1_pdgid
     - j_pt
     
