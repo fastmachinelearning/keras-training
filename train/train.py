@@ -65,7 +65,8 @@ if __name__ == "__main__":
     labels_val = labels_df.values     
     if yamlConfig['ConvInputs']:
         labels_val = labels_val[:,:-1] # drop the last label j_pt
-        
+        print labels_val.shape
+
     if yamlConfig['ConvInputs']:
         features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
         for i in range(0, len(labels_df)):

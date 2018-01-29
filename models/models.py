@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D
 from keras.models import Model
 from keras.regularizers import l1
 import h5py
@@ -74,20 +74,22 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
     Conv1D model, kernel size 1
     """
-    x = Conv1D(filters=64, kernel_size=1, strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
     x = SpatialDropout1D(rate=0.1)(x)
-    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = SpatialDropout1D(rate=0.1)(x)
-    x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = SpatialDropout1D(rate=0.1)(x)
+    #x = MaxPooling1D(pool_size=4, strides=None, padding='valid')(x)
+    #x = Conv1D(filters=16, kernel_size=1, strides=1, padding='same',
+    #           kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
+    #           activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    #x = SpatialDropout1D(rate=0.1)(x)
+    #x = MaxPooling1D(pool_size=4, strides=None, padding='valid')(x)
+    #x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
+    #           kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
+    #           activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    #x = SpatialDropout1D(rate=0.1)(x)
     x = Flatten()(x)
-    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
+    x = Dense(16, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
     x = Dropout(rate=0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
