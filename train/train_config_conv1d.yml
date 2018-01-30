@@ -1,7 +1,7 @@
 Inputs:
     - j1_ptrel
-    - j1_etarel
-    - j1_phirel
+    - j1_etarot
+    - j1_phirot
     - j1_erel
     - j1_deltaR
     - j1_pdgid
