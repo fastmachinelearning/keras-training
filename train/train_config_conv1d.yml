@@ -4,6 +4,7 @@ Inputs:
     - j1_phirot
     - j1_erel
     - j1_deltaR
+    - j1_costhetarel
     - j1_pdgid
     - j_pt
     

@@ -36,7 +36,7 @@ def rotate_and_reflect(x,y,w):
             theta = np.arctan2(py,pz)+np.radians(90)
             
     c, s = np.cos(theta), np.sin(theta)
-    R = np.matrix('{} {}; {} {}'.format(c, -s, s, -c))
+    R = np.matrix('{} {}; {} {}'.format(c, -s, s, c))
     for ix, iy, iw in zip(x, y, w):
         # rotation in eta-phi plane:
         #rot = R*np.matrix([[ix],[iy]])
@@ -110,7 +110,7 @@ def addLeaves(tree,fileName):
     particleBranches = [branch.GetName() for branch in tree.GetListOfBranches() if 'j1_' in branch.GetName()]
     additionalBranches = []
     if len(particleBranches)>0:
-        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel','j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR']
+        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel','j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR','j1_costheta','j1_costhetarel','j1_e1mcosthetarel']
 
     tree.SetBranchStatus("*",1)
     # remove these branches
@@ -160,7 +160,7 @@ def addLeaves(tree,fileName):
         if len(particleBranches)>0:
             nParticles = len(getattr(tree, particleBranches[0]))
             particleObj = [getattr(tree, branchName) for branchName in particleBranches]
-            particlePt, particleEta, particlePhi, particleE = [], [], [], []
+            particlePt, particleEta, particlePhi, particleE, particleCosTheta = [], [], [], [], []
             jet = rt.TLorentzVector()
             for i_particle in range(0, nParticles):
                 particle = rt.TLorentzVector(tree.j1_px[i_particle], tree.j1_py[i_particle], tree.j1_pz[i_particle], tree.j1_e[i_particle])
@@ -169,7 +169,9 @@ def addLeaves(tree,fileName):
                 particleEta.append( particle.Eta() )
                 particlePhi.append( particle.Phi() )
                 particleE.append( particle.E() )
+                particleCosTheta.append( particle.CosTheta() )
             maxPtIndex = np.argmax([pt for pt in particlePt])
+            
             x = np.array(particleEta) - particleEta[maxPtIndex]*np.ones(len(particleEta))
             delta_phi_func = np.vectorize(delta_phi)
             y = delta_phi_func(np.array(particlePhi), particlePhi[maxPtIndex])
@@ -186,6 +188,9 @@ def addLeaves(tree,fileName):
                 setattr(s1, 'j1_eta', float(particleEta[i_particle]))
                 setattr(s1, 'j1_etarel', float(particleEta[i_particle]-tree.j_eta[0]))
                 setattr(s1, 'j1_etarot', float(x[i_particle]))
+                setattr(s1, 'j1_costheta', float(particleCosTheta[i_particle]))
+                setattr(s1, 'j1_costhetarel', float(np.cos(2.*np.arctan(np.exp(-x[i_particle])))))
+                setattr(s1, 'j1_e1mcosthetarel', float(particleE[i_particle]*(1.- np.cos(2.*np.arctan(np.exp(-x[i_particle]))))))
                 setattr(s1, 'j1_phi', float(particlePhi[i_particle]))
                 setattr(s1, 'j1_phirel', float(delta_phi(particlePhi[i_particle],jet.Phi())))
                 setattr(s1, 'j1_phirot', float(y[i_particle]))
