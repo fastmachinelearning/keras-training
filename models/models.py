@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM
 from keras.models import Model
 from keras.regularizers import l1
 import h5py
@@ -72,28 +72,22 @@ def linear_model(Inputs, nclasses, l1Reg=0):
 
 def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
-    Conv1D model, kernel size 40
+    Conv1D model, kernel size 1
     """
-    nConstituents = int(Inputs.shape[1])
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=20, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
-    x = Dropout(rate=0.2)(x)    
-    #x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
+    #x = SpatialDropout1D(rate=0.1)(x)
+    x = Dropout(rate=0.1)(x)        
+    x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
+    x = Conv1D(filters=32, kernel_size=4, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = Dropout(rate=0.2)(x)    
-    #x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = Dropout(rate=0.2)(x)    
-    #x = GRU(int(nConstituents/2.),go_backwards=True,implementation=2,name='gru1_tanh')(x)
-    #x = Dropout(rate=0.2)(x)    
+    x = Dropout(rate=0.1)(x)    
+    x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
     x = Flatten()(x)
-    x = Dense(int(nConstituents/2.), activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
-    x = Dropout(rate=0.2)(x)
+    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
+    x = Dropout(rate=0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     print model.summary()
@@ -101,7 +95,7 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
 
 def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     """
-    Conv1D model, kernel size 40
+    Conv1D model, kernel size 1
     """
     h5f = h5py.File(h5fName)
     x = Conv1D(filters=32, kernel_size=1, strides=1, padding='same',
@@ -126,6 +120,48 @@ def conv2d_model(Inputs, nclasses, l1Reg=0):
 
     return model
 
+def rnn_model(Inputs, nclasses, l1Reg=0):
+    """
+    Simple RNN model
+    """
+    x = SimpleRNN(72,return_sequences=True)(x)
+    x = Flatten()(x)
+    x = Dropout(0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print model.summary()
+    return model
+
+def lstm_model(Inputs, nclasses, l1Reg=0):
+    """
+    Basic LSTM model
+    """
+    x = LSTM(72,return_sequences=True)(x)
+    x = Flatten()(x)
+    x = Dropout(0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print model.summary()
+    return model
+
+
+def lstm_model_full(Inputs, nclasses, l1Reg=0):
+    """
+    LSTM model akin to what Sid is using for his studies
+    """
+    x = Conv1D(32, 2, activation='relu', name='particles_conv0', kernel_initializer='lecun_uniform', padding='same')(Inputs)
+    x = Conv1D(16, 4, activation='relu', name='particles_conv1', kernel_initializer='lecun_uniform', padding='same')(x)
+    x = LSTM(72,return_sequences=True)(x)
+    x = Flatten()(x)
+    x = Dropout(0.1)(x)
+    x = Dense(128, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_dense2')(x)
+    x = Dropout(0.1)(x)
+    x = Dense(128, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_dense3')(x)
+    x = Dropout(0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print model.summary()
+    return model
 
 if __name__ == '__main__':
     print conv1d_model(Input(shape=(100,10,)), 2).summary()
