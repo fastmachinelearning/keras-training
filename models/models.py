@@ -72,22 +72,28 @@ def linear_model(Inputs, nclasses, l1Reg=0):
 
 def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
-    Conv1D model, kernel size 1
+    Conv1D model, kernel size 40
     """
-    x = Conv1D(filters=32, kernel_size=20, strides=1, padding='same',
+    nConstituents = int(Inputs.shape[1])
+    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
-    #x = SpatialDropout1D(rate=0.1)(x)
-    x = Dropout(rate=0.1)(x)        
-    x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
-    x = Conv1D(filters=32, kernel_size=4, strides=1, padding='same',
+    #x = Dropout(rate=0.2)(x)    
+    #x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
+    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = Dropout(rate=0.1)(x)    
-    x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
+    #x = Dropout(rate=0.2)(x)    
+    #x = MaxPooling1D(pool_size=2, strides=None, padding='valid')(x)
+    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
+               activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    #x = Dropout(rate=0.2)(x)    
+    #x = GRU(int(nConstituents/2.),go_backwards=True,implementation=2,name='gru1_tanh')(x)
+    #x = Dropout(rate=0.2)(x)    
     x = Flatten()(x)
-    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
-    x = Dropout(rate=0.1)(x)
+    x = Dense(int(nConstituents/2.), activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(x)
+    #x = Dropout(rate=0.2)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
     print model.summary()

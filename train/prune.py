@@ -24,17 +24,18 @@ get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 def getWeightArray(model):
     allWeights = []
     for layer in model.layers:         
-        if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
+        if layer.__class__.__name__ in ['Dense', 'Conv1D']:
             original_w = layer.get_weights()
             for my_weights in original_w:                
-                if len(my_weights.shape) < 2: #bias term
+                if len(my_weights.shape) < 2: # bias term, ignore for now
                     continue
                 #l1norm = tf.norm(my_weights,ord=1)
-                elif len(my_weights.shape) == 2: # Dense or Conv1D (?)
+                elif len(my_weights.shape) == 2: # Dense
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
-                elif len(my_weights.shape) == 3: # Conv2D
+                elif len(my_weights.shape) == 3: # Conv1D
+                    # (filter_width, n_inputs, n_filters)
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_0 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_reduce_max_0,axis=-1)
@@ -73,18 +74,18 @@ if __name__ == "__main__":
         
     for layer in model.layers:     
         droppedPerLayer[layer.name] = []
-        if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
+        if layer.__class__.__name__ in ['Dense', 'Conv1D']:
             original_w = layer.get_weights()
             weightsPerLayer[layer.name] = original_w
             for my_weights in original_w:
-                if len(my_weights.shape) < 2: #bias term
+                if len(my_weights.shape) < 2: # bias term, skip for now
                     continue
                 #l1norm = tf.norm(my_weights,ord=1)
-                elif len(my_weights.shape) == 2: # Dense or Conv1D (?)
+                elif len(my_weights.shape) == 2: # Dense
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
-                elif len(my_weights.shape) == 3: # Conv2D
+                elif len(my_weights.shape) == 3: # Conv1D
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_0 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_reduce_max_0,axis=-1)
