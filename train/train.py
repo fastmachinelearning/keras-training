@@ -19,33 +19,12 @@ import models
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-## Config module
-def parse_config(config_file) :
-
-    print "Loading configuration from " + str(config_file)
-    config = open(config_file, 'r')
-    return yaml.load(config)
-
-if __name__ == "__main__":
-    parser = OptionParser()
-    parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
-    parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
-    parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='train_simple/', help='output directory')
-    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config_threelayer.yml', help='configuration file')
-    (options,args) = parser.parse_args()
-     
-    yamlConfig = parse_config(options.config)
-    
-    if os.path.isdir(options.outputDir):
-        raise Exception('output directory must not exists yet')
-    else:
-        os.mkdir(options.outputDir)
-
+def get_features(options, yamlConfig):
     # To use one data file:
     h5File = h5py.File(options.inputFile)
     treeArray = h5File[options.tree][()]
-    print treeArray.shape
 
+    print treeArray.shape
     print treeArray.dtype.names
     
     # List of features to use
@@ -90,12 +69,41 @@ if __name__ == "__main__":
     if yamlConfig['NormalizeInputs'] and not yamlConfig['ConvInputs']:
         scaler = preprocessing.StandardScaler().fit(X_train_val)
         X_train_val = scaler.transform(X_train_val)
+        X_test = scaler.transform(X_test)
+
     #Normalize conv inputs
     if yamlConfig['NormalizeInputs'] and yamlConfig['ConvInputs']:
         reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
         scaler = preprocessing.StandardScaler().fit(reshape_X_train_val)
         for p in range(X_train_val.shape[1]):
             X_train_val[:,p,:] = scaler.transform(X_train_val[:,p,:])
+            X_test[:,p,:] = scaler.transform(X_test[:,p,:])    
+
+    return X_train_val, X_test, y_train_val, y_test, labels
+
+## Config module
+def parse_config(config_file) :
+
+    print "Loading configuration from " + str(config_file)
+    config = open(config_file, 'r')
+    return yaml.load(config)
+
+if __name__ == "__main__":
+    parser = OptionParser()
+    parser.add_option('-i','--input'   ,action='store',type='string',dest='inputFile'   ,default='../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z', help='input file')
+    parser.add_option('-t','--tree'   ,action='store',type='string',dest='tree'   ,default='t_allpar_new', help='tree name')
+    parser.add_option('-o','--output'   ,action='store',type='string',dest='outputDir'   ,default='train_simple/', help='output directory')
+    parser.add_option('-c','--config'   ,action='store',type='string', dest='config', default='train_config_threelayer.yml', help='configuration file')
+    (options,args) = parser.parse_args()
+     
+    yamlConfig = parse_config(options.config)
+    
+    if os.path.isdir(options.outputDir):
+        raise Exception('output directory must not exists yet')
+    else:
+        os.mkdir(options.outputDir)
+
+    X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
     
     #from models import three_layer_model
     model = getattr(models, yamlConfig['KerasModel'])    

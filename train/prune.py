@@ -119,7 +119,7 @@ if __name__ == "__main__":
     model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
 
     # save binary tensor in h5 file 
-    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'))
+    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
     for layer, binary_tensor in binaryTensorPerLayer.iteritems():
         h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
     h5f.close()

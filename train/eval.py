@@ -20,12 +20,12 @@ from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 import yaml
-from train import parse_config
+from train import parse_config, get_features
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-def makeRoc(features, features_val, labels, labels_val, model, outputDir):
+def makeRoc(features_val, labels, labels_val, model, outputDir):
     print 'in makeRoc()'
         
     predict_test = model.predict(features_val)
@@ -90,64 +90,9 @@ if __name__ == "__main__":
         os.mkdir(options.outputDir)
 
     # To use one data file:
-    h5File = h5py.File(options.inputFile)
-    treeArray = h5File[options.tree][()]
+    X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
 
-    print treeArray.dtype.names
-    
-    # List of features to use
-    features = yamlConfig['Inputs']
-    
-    # List of labels to use
-    labels = yamlConfig['Labels']
-
-    # Convert to dataframe
-    features_df = pd.DataFrame(treeArray,columns=features)
-    labels_df = pd.DataFrame(treeArray,columns=labels)
-    if yamlConfig['ConvInputs']:
-        labels_df = labels_df.drop_duplicates()
-    
-    # Convert to numpy array with correct shape
-    features_val = features_df.values
-    labels_val = labels_df.values
-    if yamlConfig['ConvInputs']:
-        labels_val = labels_val[:,:-1] # drop the last label j_pt
-     
-    if yamlConfig['ConvInputs']:
-        features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
-        for i in range(0, len(labels_df)):
-            features_df_i = features_df[features_df['j_pt']==labels_df['j_pt'].iloc[i]]
-            index_values = features_df_i.index.values
-            #features_val_i = features_val[index_values[0]:index_values[-1]+1,:-1] # drop the last feature j_pt
-            features_val_i = features_val[np.array(index_values),:-1] # drop the last feature j_pt
-            nParticles = len(features_val_i)
-            if nParticles>yamlConfig['MaxParticles']:
-                features_val_i =  features_val_i[0:yamlConfig['MaxParticles'],:]
-            else:        
-                features_val_i = np.concatenate([features_val_i, np.zeros((yamlConfig['MaxParticles']-nParticles, len(features)-1))])
-                
-            features_2dval[i, :, :] = features_val_i
-
-        features_val = features_2dval
-
-    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
-    
-    #Normalize inputs
-    if yamlConfig['NormalizeInputs'] and not yamlConfig['ConvInputs']:
-        scaler = preprocessing.StandardScaler().fit(X_train_val)
-        X_train_val = scaler.transform(X_train_val)
-    #Normalize conv inputs
-    if yamlConfig['NormalizeInputs'] and yamlConfig['ConvInputs']:
-        reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
-        scaler = preprocessing.StandardScaler().fit(reshape_X_train_val)
-        for p in range(X_test.shape[1]):
-            X_test[:,p,:] = scaler.transform(X_test[:,p,:])    
-    
-    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
-
-    if yamlConfig['ConvInputs']:
-        labels = labels[:-1]
-    makeRoc(features, X_test, labels, y_test, model, options.outputDir)
+    makeRoc(X_test, labels, y_test, model, options.outputDir)
 
     import json
 
