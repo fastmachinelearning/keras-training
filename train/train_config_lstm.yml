@@ -1,0 +1,24 @@
+Inputs:
+    - j1_ptrel
+    - j1_etarot
+    - j1_phirot
+    - j1_erel
+    - j1_deltaR
+    - j1_pdgid
+    - j_pt
+    
+Labels:
+    - j_g
+    - j_q
+    - j_w
+    - j_z
+    - j_t
+    - j_pt
+    
+KerasModel: lstm_model
+KerasModelRetrain: rnn_model_constraint
+KerasLoss: categorical_crossentropy
+L1Reg: 0
+NormalizeInputs: 1
+ConvInputs: 1
+MaxParticles: 50

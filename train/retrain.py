@@ -14,7 +14,7 @@ from keras.layers import Input
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import yaml
-from train import parse_config
+from train import parse_config, get_features
 import models
 
 # To turn off GPU
@@ -37,42 +37,12 @@ if __name__ == "__main__":
     else:
         os.mkdir(options.outputDir)    
 
-    # To use one data file:
-    h5File = h5py.File(options.inputFile)
-    treeArray = h5File[options.tree][()]
+    X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
 
-    print treeArray.dtype.names
-    
-    # List of features to use
-    features = yamlConfig['Inputs']
-    
-    # List of labels to use
-    labels = yamlConfig['Labels']
-
-    # Convert to dataframe
-    features_df = pd.DataFrame(treeArray,columns=features)
-    labels_df = pd.DataFrame(treeArray,columns=labels)
-    
-    # Convert to numpy array with correct shape
-    features_val = features_df.values
-    labels_val = labels_df.values
-    
-    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
-    print X_train_val.shape
-    print y_train_val.shape
-    print X_test.shape
-    print y_test.shape
-
-    #Normalize inputs
-    if yamlConfig['NormalizeInputs']:
-        scaler = preprocessing.StandardScaler().fit(X_train_val)
-        X_train_val = scaler.transform(X_train_val)
-
-    #from models import three_layer_model_constraint
     model_constraint = getattr(models, yamlConfig['KerasModelRetrain'])
 
     # Instantiate new model with added custom constraints
-    keras_model = model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
+    keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
     
     outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
     jsonString = keras_model.to_json()

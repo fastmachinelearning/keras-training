@@ -23,18 +23,21 @@ get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 def getWeightArray(model):
     allWeights = []
+    allWeightsByLayer = {}
     for layer in model.layers:         
-        if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
+        if layer.__class__.__name__ in ['Dense', 'Conv1D']:
             original_w = layer.get_weights()
+            weightsByLayer = []
             for my_weights in original_w:                
-                if len(my_weights.shape) < 2: #bias term
+                if len(my_weights.shape) < 2: # bias term, ignore for now
                     continue
                 #l1norm = tf.norm(my_weights,ord=1)
-                elif len(my_weights.shape) == 2: # Dense or Conv1D (?)
+                elif len(my_weights.shape) == 2: # Dense
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
-                elif len(my_weights.shape) == 3: # Conv2D
+                elif len(my_weights.shape) == 3: # Conv1D
+                    # (filter_width, n_inputs, n_filters)
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_0 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_reduce_max_0,axis=-1)
@@ -46,8 +49,11 @@ def getWeightArray(model):
                 while not it.finished:
                     w = it[0]
                     allWeights.append(abs(w)/tensor_max)
+                    weightsByLayer.append(abs(w)/tensor_max)
                     it.iternext()
-    return np.array(allWeights)
+            if len(weightsByLayer)>0:
+                allWeightsByLayer[layer.name] = np.array(weightsByLayer)
+    return np.array(allWeights), allWeightsByLayer 
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -62,7 +68,7 @@ if __name__ == "__main__":
     weightsPerLayer = {}
     droppedPerLayer = {}
     binaryTensorPerLayer = {}
-    allWeightsArray = getWeightArray(model)
+    allWeightsArray,allWeightsByLayer = getWeightArray(model)
     if options.relative_weight_percentile is not None:
         relative_weight_max = np.percentile(allWeightsArray,options.relative_weight_percentile,axis=-1)
     elif options.relative_weight_max is not None:
@@ -73,18 +79,18 @@ if __name__ == "__main__":
         
     for layer in model.layers:     
         droppedPerLayer[layer.name] = []
-        if layer.__class__.__name__ in ['Dense', 'Convolution1D', 'Convolution2D']:
+        if layer.__class__.__name__ in ['Dense', 'Conv1D']:
             original_w = layer.get_weights()
             weightsPerLayer[layer.name] = original_w
             for my_weights in original_w:
-                if len(my_weights.shape) < 2: #bias term
+                if len(my_weights.shape) < 2: # bias term, skip for now
                     continue
                 #l1norm = tf.norm(my_weights,ord=1)
-                elif len(my_weights.shape) == 2: # Dense or Conv1D (?)
+                elif len(my_weights.shape) == 2: # Dense
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_2 = tf.reduce_max(tensor_reduce_max_1,axis=-1)
-                elif len(my_weights.shape) == 3: # Conv2D
+                elif len(my_weights.shape) == 3: # Conv1D
                     tensor_abs = tf.abs(my_weights)
                     tensor_reduce_max_0 = tf.reduce_max(tensor_abs,axis=-1)
                     tensor_reduce_max_1 = tf.reduce_max(tensor_reduce_max_0,axis=-1)
@@ -118,7 +124,7 @@ if __name__ == "__main__":
     model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
 
     # save binary tensor in h5 file 
-    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'))
+    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
     for layer, binary_tensor in binaryTensorPerLayer.iteritems():
         h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
     h5f.close()
@@ -137,7 +143,9 @@ if __name__ == "__main__":
     logbins = np.geomspace(xmin, xmax, 100)
     
     plt.figure()
-    plt.hist(allWeightsArray,bins=bins)
+    #plt.hist(allWeightsArray,bins=bins)
+    plt.hist(allWeightsByLayer.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    plt.legend(prop={'size':10})
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):
@@ -150,8 +158,10 @@ if __name__ == "__main__":
 
         
     plt.figure()
-    plt.hist(allWeightsArray,bins=logbins)
+    #plt.hist(allWeightsArray,bins=logbins)
+    plt.hist(allWeightsByLayer.values(),bins=logbins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
     plt.semilogx()
+    plt.legend(prop={'size':10})
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):

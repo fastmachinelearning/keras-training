@@ -20,19 +20,18 @@ from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 import yaml
-from train import parse_config
+from train import parse_config, get_features
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-def makeRoc(features, features_val, labels, labels_val, model, outputDir):
+def makeRoc(features_val, labels, labels_val, model, outputDir):
     print 'in makeRoc()'
         
     predict_test = model.predict(features_val)
 
-    df = pd.DataFrame(features_val)
-    df.columns = features
-
+    df = pd.DataFrame()
+    
     fpr = {}
     tpr = {}
     auc1 = {}
@@ -90,40 +89,12 @@ if __name__ == "__main__":
     else:
         os.mkdir(options.outputDir)
 
-    # To use one data file:
-    h5File = h5py.File(options.inputFile)
-    treeArray = h5File[options.tree][()]
+    X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
 
-    print treeArray.dtype.names
-    
-    # List of features to use
-    features = yamlConfig['Inputs']
-    
-    # List of labels to use
-    labels = yamlConfig['Labels']
 
-    # Convert to dataframe
-    features_df = pd.DataFrame(treeArray,columns=features)
-    labels_df = pd.DataFrame(treeArray,columns=labels)
-    
-    # Convert to numpy array with correct shape
-    features_val = features_df.values
-    labels_val = labels_df.values
-    
-    X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
-    print X_train_val.shape
-    print y_train_val.shape
-    print X_test.shape
-    print y_test.shape
-    
-    #Normalize
-    if yamlConfig['NormalizeInputs']:
-     scaler = preprocessing.StandardScaler().fit(X_train_val)
-     X_test = scaler.transform(X_test)    
-    
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 
-    makeRoc(features, X_test, labels, y_test, model, options.outputDir)
+    makeRoc(X_test, labels, y_test, model, options.outputDir)
 
     import json
 
