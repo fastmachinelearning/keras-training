@@ -63,6 +63,7 @@ def get_features(options, yamlConfig):
 
         features_val = features_2dval
         
+
     X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
     
     #Normalize inputs
@@ -78,6 +79,9 @@ def get_features(options, yamlConfig):
         for p in range(X_train_val.shape[1]):
             X_train_val[:,p,:] = scaler.transform(X_train_val[:,p,:])
             X_test[:,p,:] = scaler.transform(X_test[:,p,:])    
+
+    if yamlConfig['ConvInputs']:
+        labels = labels[:-1]
 
     return X_train_val, X_test, y_train_val, y_test, labels
 

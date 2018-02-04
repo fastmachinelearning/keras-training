@@ -89,8 +89,10 @@ if __name__ == "__main__":
     else:
         os.mkdir(options.outputDir)
 
-    # To use one data file:
     X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
+
+
+    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 
     makeRoc(X_test, labels, y_test, model, options.outputDir)
 

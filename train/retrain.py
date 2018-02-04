@@ -42,7 +42,7 @@ if __name__ == "__main__":
     model_constraint = getattr(models, yamlConfig['KerasModelRetrain'])
 
     # Instantiate new model with added custom constraints
-    keras_model = model_constraint(Input(shape=(X_train_val.shape[1],)), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
+    keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
     
     outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
     jsonString = keras_model.to_json()
