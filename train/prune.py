@@ -192,7 +192,7 @@ if __name__ == "__main__":
     plt.figure()
     #plt.hist(allWeightsArrayNonRel,bins=bins)
     plt.hist(allWeightsByLayerNonRel.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
-    plt.semilogx()
+    plt.semilogx(basex=2)
     plt.legend(prop={'size':10})
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Value of Weights')
