@@ -15,6 +15,7 @@ import pandas as pd
 from keras.utils.conv_utils import convert_kernel
 import tensorflow as tf
 from constraints import ZeroSomeWeights
+from train import print_model_to_json
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 
@@ -122,7 +123,8 @@ if __name__ == "__main__":
     print '%.1f%% compression'%(100.*totalDropped/model.count_params())
     model.save(options.outputModel)
     model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
-
+    print_model_to_json(model, options.outputModel.replace('.h5','.json'))
+    
     # save binary tensor in h5 file 
     h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
     for layer, binary_tensor in binaryTensorPerLayer.iteritems():
@@ -149,6 +151,7 @@ if __name__ == "__main__":
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):
+        if percentile==0: continue
         if vline < xmin: continue
         plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
         plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
@@ -165,6 +168,7 @@ if __name__ == "__main__":
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):
+        if percentile==0: continue
         if vline < xmin: continue
         plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
         plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')

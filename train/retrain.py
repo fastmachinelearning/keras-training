@@ -14,7 +14,7 @@ from keras.layers import Input
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import yaml
-from train import parse_config, get_features
+from train import parse_config, get_features, print_model_to_json
 import models
 
 # To turn off GPU
@@ -43,14 +43,8 @@ if __name__ == "__main__":
 
     # Instantiate new model with added custom constraints
     keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
-    
-    outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
-    jsonString = keras_model.to_json()
-    import json
-    with outfile:
-        obj = json.loads(jsonString)
-        json.dump(obj, outfile, sort_keys=True,indent=4, separators=(',', ': '))
-        outfile.write('\n')
+
+    print_model_to_json(keras_model,options.outputDir + '/' + 'KERAS_model.json')
         
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)
