@@ -96,7 +96,7 @@ def three_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     return model
 
 
-def three_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
+def three_layer_model_tanh_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     """
     Two hidden layers model
     """
