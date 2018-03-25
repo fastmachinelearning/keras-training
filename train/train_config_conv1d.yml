@@ -21,5 +21,5 @@ KerasModelRetrain: conv1d_model_constraint
 KerasLoss: categorical_crossentropy
 L1Reg: 0.0001
 NormalizeInputs: 1
-ConvInputs: 1
+InputType: Conv1D
 MaxParticles: 100

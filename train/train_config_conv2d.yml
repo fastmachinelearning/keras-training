@@ -1,0 +1,27 @@
+Inputs:
+    - j1_etarot
+    - j1_phirot
+    - j1_ptrel
+    - j_pt
+    
+Labels:
+    - j_g
+    - j_q
+    - j_w
+    - j_z
+    - j_t
+    - j_pt
+    
+KerasModel: conv2d_model
+KerasModelRetrain: conv2d_model_constraint
+KerasLoss: categorical_crossentropy
+L1Reg: 0
+NormalizeInputs: 0
+InputType: Conv2D
+BinsX: 30
+MinX: -1.0
+MaxX: 1.0
+BinsY: 30
+MinY: -1.0
+MaxY: 1.0
+MaxParticles: 100

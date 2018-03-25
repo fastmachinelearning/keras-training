@@ -178,12 +178,19 @@ def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
 
 def conv2d_model(Inputs, nclasses, l1Reg=0):
     """
-    Conv2D model, kernel size (3,3)
+    Conv2D model, kernel size (11,11), (3,3), (3,3)
     """
-    x = Conv2D(filters=32, kernel_size=(3,3), strides=(1,1), padding='same',
-               kernel_initializer='he_normal', use_bias=False, name='conv2_relu',
+    x = Conv2D(filters=8, kernel_size=(11,11), strides=(2,2), padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu')(Inputs)
+    x = Conv2D(filters=8, kernel_size=(3,3), strides=(1,1), padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
+               activation = 'relu')(x)
+    x = Conv2D(filters=8, kernel_size=(3,3), strides=(1,1), padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
+               activation = 'relu')(x)
     x = Flatten()(x)
+    x = Dense(50, activation='relu')(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
     model = Model(inputs=Inputs, outputs=predictions)
 

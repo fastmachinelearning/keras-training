@@ -28,4 +28,4 @@ KerasModelRetrain: three_layer_model_tanh_constraint
 KerasLoss: categorical_crossentropy
 L1Reg: 0.0001
 NormalizeInputs: 1 
-ConvInputs: 0
+InputType: Conv1D
