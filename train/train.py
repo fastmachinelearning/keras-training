@@ -44,17 +44,17 @@ def get_features(options, yamlConfig):
     # Convert to dataframe
     features_df = pd.DataFrame(treeArray,columns=features)
     labels_df = pd.DataFrame(treeArray,columns=labels)
-    if yamlConfig['ConvInputs']:
+    if 'Conv' in yamlConfig['InputType']:
         labels_df = labels_df.drop_duplicates()
         
     # Convert to numpy array 
     features_val = features_df.values
     labels_val = labels_df.values     
-    if yamlConfig['ConvInputs']:
+    if 'Conv' in yamlConfig['InputType']:
         labels_val = labels_val[:,:-1] # drop the last label j_pt
         print labels_val.shape
 
-    if yamlConfig['ConvInputs']:
+    if yamlConfig['InputType']=='Conv1D':
         features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
         for i in range(0, len(labels_df)):
             features_df_i = features_df[features_df['j_pt']==labels_df['j_pt'].iloc[i]]
@@ -70,25 +70,44 @@ def get_features(options, yamlConfig):
             features_2dval[i, :, :] = features_val_i
 
         features_val = features_2dval
-        
+
+    elif yamlConfig['InputType']=='Conv2D':
+        features_2dval = np.zeros((len(labels_df), yamlConfig['BinsX'], yamlConfig['BinsY'], 1))
+        for i in range(0, len(labels_df)):
+            features_df_i = features_df[features_df['j_pt']==labels_df['j_pt'].iloc[i]]
+            index_values = features_df_i.index.values
+            
+            xbins = np.linspace(yamlConfig['MinX'],yamlConfig['MaxX'],yamlConfig['BinsX']+1)
+            ybins = np.linspace(yamlConfig['MinY'],yamlConfig['MaxY'],yamlConfig['BinsY']+1)
+
+            x = features_df_i[features[0]]           
+            y = features_df_i[features[1]]
+            w = features_df_i[features[2]]
+
+            hist, xedges, yedges = np.histogram2d(x, y, weights=w, bins=(xbins,ybins))
+
+            for ix in range(0,yamlConfig['BinsX']):
+                for iy in range(0,yamlConfig['BinsY']):
+                    features_2dval[i,ix,iy,0] = hist[ix,iy]
+        features_val = features_2dval
 
     X_train_val, X_test, y_train_val, y_test = train_test_split(features_val, labels_val, test_size=0.2, random_state=42)
     
     #Normalize inputs
-    if yamlConfig['NormalizeInputs'] and not yamlConfig['ConvInputs']:
+    if yamlConfig['NormalizeInputs'] and yamlConfig['InputType']!='Conv1D' and yamlConfig['InputType']!='Conv2D':
         scaler = preprocessing.StandardScaler().fit(X_train_val)
         X_train_val = scaler.transform(X_train_val)
         X_test = scaler.transform(X_test)
 
     #Normalize conv inputs
-    if yamlConfig['NormalizeInputs'] and yamlConfig['ConvInputs']:
+    if yamlConfig['NormalizeInputs'] and yamlConfig['InputType']=='Conv1D':
         reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
         scaler = preprocessing.StandardScaler().fit(reshape_X_train_val)
         for p in range(X_train_val.shape[1]):
             X_train_val[:,p,:] = scaler.transform(X_train_val[:,p,:])
             X_test[:,p,:] = scaler.transform(X_test[:,p,:])    
 
-    if yamlConfig['ConvInputs']:
+    if 'Conv' in yamlConfig['InputType']:
         labels = labels[:-1]
 
     return X_train_val, X_test, y_train_val, y_test, labels
