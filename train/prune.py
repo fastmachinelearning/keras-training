@@ -1,5 +1,6 @@
 import sys
 import os
+import math
 from optparse import OptionParser
 from keras.models import load_model, Model
 from argparse import ArgumentParser
@@ -15,6 +16,7 @@ import pandas as pd
 from keras.utils.conv_utils import convert_kernel
 import tensorflow as tf
 from constraints import ZeroSomeWeights
+from train import print_model_to_json
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 
@@ -69,13 +71,10 @@ if __name__ == "__main__":
     parser.add_option('-o','--outputModel'   ,action='store',type='string',dest='outputModel'   ,default='prune_simple/pruned_model.h5', help='output directory')
     (options,args) = parser.parse_args()
 
-    print "Test0"
     from models import three_layer_model
     from keras.layers import Input
-    model = three_layer_model(Input(shape=(16,)), 5)
-    #model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
+    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
     model.load_weights(options.inputModel)
-    print "Test1"
 
     weightsPerLayer = {}
     droppedPerLayer = {}
@@ -126,33 +125,38 @@ if __name__ == "__main__":
             layer.set_weights(converted_w)
 
 
-#    print 'Summary:'
-#    totalDropped = sum([len(droppedPerLayer[layer.name]) for layer in model.layers])
-#    for layer in model.layers:
-#        print '%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name, layer.count_params())
-#    print '%i total weights dropped out of %i total weights'%(totalDropped,model.count_params())
-#    print '%.1f%% compression'%(100.*totalDropped/model.count_params())
-#    model.save(options.outputModel)
-#    model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
-
-#    # save binary tensor in h5 file 
-#    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
-#    for layer, binary_tensor in binaryTensorPerLayer.iteritems():
-#        h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
-#    h5f.close()
+    print 'Summary:'
+    totalDropped = sum([len(droppedPerLayer[layer.name]) for layer in model.layers])
+    for layer in model.layers:
+        print '%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name, layer.count_params())
+    print '%i total weights dropped out of %i total weights'%(totalDropped,model.count_params())
+    print '%.1f%% compression'%(100.*totalDropped/model.count_params())
+    model.save(options.outputModel)
+    model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
+    print_model_to_json(model, options.outputModel.replace('.h5','.json'))
+    
+    # save binary tensor in h5 file 
+    h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
+    for layer, binary_tensor in binaryTensorPerLayer.iteritems():
+        h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
+    h5f.close()
 
     # plot the distribution of weights
     if options.relative_weight_percentile is not None:
         your_percentile = options.relative_weight_percentile
     else:
         your_percentile = stats.percentileofscore(allWeightsArray, relative_weight_max)
-    percentiles = [5,16,50,84,95,your_percentile]
-    colors = ['r','r','r','r','r','g']
+    #percentiles = [5,16,50,84,95,your_percentile]
+    percentiles = [5,95,your_percentile]
+    #colors = ['r','r','r','r','r','g']
+    colors = ['r','r','g']
     vlines = np.percentile(allWeightsArray,percentiles,axis=-1)
     xmin = np.amin(allWeightsArray[np.nonzero(allWeightsArray)])
     xmax = np.amax(allWeightsArray)
-    bins = np.linspace(xmin, xmax, 100)
-    logbins = np.geomspace(xmin, xmax, 100)
+    xmin = 6e-8
+    xmax = 1
+    bins = np.linspace(xmin, xmax, 50)
+    logbins = np.geomspace(xmin, xmax, 50)
     
     plt.figure()
     #plt.hist(allWeightsArray,bins=bins)
@@ -161,6 +165,7 @@ if __name__ == "__main__":
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):
+        if percentile==0: continue
         if vline < xmin: continue
         plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
         plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
@@ -176,12 +181,22 @@ if __name__ == "__main__":
     plt.legend(prop={'size':10})
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
+    
     for vline, percentile, color in zip(vlines, percentiles, colors):
+        if percentile==0: continue
         if vline < xmin: continue
+        xAdd = 0
+        yAdd = 0
+        #if plotPercentile5 and percentile==84:
+        #    xAdd=0.2
+        #if plotPercentile16 and percentile==95:
+        #    xAdd=1.2
         plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
-        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
+        plt.text(vline+xAdd, ymax+0.01*(ymax-ymin)+yAdd, '%s%%'%percentile, color=color, horizontalalignment='center')
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Relative Weights')
+    plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))
 
     
@@ -196,4 +211,6 @@ if __name__ == "__main__":
     plt.legend(prop={'size':10})
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Value of Weights')
+    plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig(options.outputModel.replace('.h5','_weight_nonrel_histogram_logx.pdf'))

@@ -18,6 +18,14 @@ import models
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+def print_model_to_json(keras_model, outfile_name):
+    outfile = open(outfile_name,'wb')
+    jsonString = keras_model.to_json()
+    import json
+    with outfile:
+        obj = json.loads(jsonString)
+        json.dump(obj, outfile, sort_keys=True,indent=4, separators=(',', ': '))
+        outfile.write('\n')
 
 def get_features(options, yamlConfig):
     # To use one data file:
@@ -114,13 +122,7 @@ if __name__ == "__main__":
 
     keras_model = model(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'] )
 
-    outfile = open(options.outputDir + '/' + 'KERAS_model.json','wb')
-    jsonString = keras_model.to_json()
-    import json
-    with outfile:
-        obj = json.loads(jsonString)
-        json.dump(obj, outfile, sort_keys=True,indent=4, separators=(',', ': '))
-        outfile.write('\n')
+    print_model_to_json(keras_model,options.outputDir + '/' + 'KERAS_model.json')
 
     startlearningrate=0.0001
     adam = Adam(lr=startlearningrate)

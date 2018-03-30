@@ -1,4 +1,4 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM, BatchNormalization
 from keras.models import Model
 from keras.regularizers import l1
 import h5py
@@ -60,6 +60,21 @@ def three_layer_model(Inputs, nclasses, l1Reg=0):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
+def three_layer_model_tanh(Inputs, nclasses, l1Reg=0):
+    """
+    Two hidden layers model
+    """
+    x = Dense(64, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc1_tanh', W_regularizer=l1(l1Reg))(Inputs)
+    x = Dense(32, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc2_tanh', W_regularizer=l1(l1Reg))(x)
+    x = Dense(32, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc3_tanh', W_regularizer=l1(l1Reg))(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
+                        name='output_softmax', W_regularizer=l1(l1Reg))(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    return model
+
 def three_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     """
     Two hidden layers model
@@ -80,6 +95,27 @@ def three_layer_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
+
+def three_layer_model_tanh_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
+    """
+    Two hidden layers model
+    """
+    h5f = h5py.File(h5fName)
+    x = Dense(64, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc1_tanh', W_regularizer=l1(l1Reg), 
+              kernel_constraint = zero_some_weights(binary_tensor=h5f['fc1_tanh'][()].tolist()))(Inputs)
+    x = Dense(32, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc2_tanh', W_regularizer=l1(l1Reg), 
+              kernel_constraint = zero_some_weights(binary_tensor=h5f['fc2_tanh'][()].tolist()))(x)
+    x = Dense(32, activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc3_tanh', W_regularizer=l1(l1Reg), 
+              kernel_constraint = zero_some_weights(binary_tensor=h5f['fc3_tanh'][()].tolist()))(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
+                        name='output_softmax', W_regularizer=l1(l1Reg), 
+                        kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    return model
+
 def linear_model(Inputs, nclasses, l1Reg=0):
     """
     Linear model
@@ -93,18 +129,18 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
     Conv1D model, kernel size 40
     """
     nConstituents = int(Inputs.shape[1])
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = Conv1D(filters=32, kernel_size=int(nConstituents/2.5), strides=1, padding='same',
-               kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
-               activation = 'relu', W_regularizer=l1(l1Reg))(x)
+    x = Conv1D(filters=32, kernel_size=int(nConstituents/2), strides=4, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv1_tanh',
+               activation = 'tanh', W_regularizer=l1(l1Reg))(Inputs)
+    x = Conv1D(filters=16, kernel_size=int(nConstituents/4), strides=2, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv2_tanh',
+               activation = 'tanh', W_regularizer=l1(l1Reg))(x)
+    x = Conv1D(filters=8, kernel_size=int(nConstituents/8), strides=1, padding='same',
+               kernel_initializer='he_normal', use_bias=True, name='conv3_tanh',
+               activation = 'tanh', W_regularizer=l1(l1Reg))(x)
     x = Flatten()(x)
-    x = Dense(int(nConstituents/2.), activation='relu', kernel_initializer='lecun_uniform', 
-              name='fc1_relu', W_regularizer=l1(l1Reg))(x)
+    x = Dense(int(nConstituents/4), activation='tanh', kernel_initializer='lecun_uniform', 
+              name='fc1_tanh', W_regularizer=l1(l1Reg))(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
                         name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
