@@ -45,13 +45,15 @@ def makeRoc(features_val, labels, labels_val, model, outputDir):
 
         auc1[label] = auc(fpr[label], tpr[label])
             
-        plt.plot(tpr[label],fpr[label],label='%s tagger, auc = %.1f%%'%(label,auc1[label]*100.))
+        plt.plot(tpr[label],fpr[label],label='%s tagger, AUC = %.1f%%'%(label.replace('j_',''),auc1[label]*100.))
     plt.semilogy()
-    plt.xlabel("sig. efficiency")
-    plt.ylabel("bkg. mistag rate")
+    plt.xlabel("Signal Efficiency")
+    plt.ylabel("Background Efficiency")
     plt.ylim(0.001,1)
     plt.grid(True)
     plt.legend(loc='upper left')
+    plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig('%s/ROC.pdf'%(options.outputDir))
 
     
@@ -84,10 +86,10 @@ if __name__ == "__main__":
 
     yamlConfig = parse_config(options.config)
     
-    if os.path.isdir(options.outputDir):
-        raise Exception('output directory must not exists yet')
-    else:
-        os.mkdir(options.outputDir)
+    #if os.path.isdir(options.outputDir):
+    #    raise Exception('output directory must not exists yet')
+    #else:
+    #    os.mkdir(options.outputDir)
 
     X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
 
