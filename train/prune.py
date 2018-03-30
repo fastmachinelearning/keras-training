@@ -1,5 +1,6 @@
 import sys
 import os
+import math
 from optparse import OptionParser
 from keras.models import load_model, Model
 from argparse import ArgumentParser
@@ -24,11 +25,14 @@ get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 def getWeightArray(model):
     allWeights = []
+    allWeightsNonRel = []
     allWeightsByLayer = {}
+    allWeightsByLayerNonRel = {}
     for layer in model.layers:         
         if layer.__class__.__name__ in ['Dense', 'Conv1D']:
             original_w = layer.get_weights()
             weightsByLayer = []
+            weightsByLayerNonRel = []
             for my_weights in original_w:                
                 if len(my_weights.shape) < 2: # bias term, ignore for now
                     continue
@@ -50,11 +54,14 @@ def getWeightArray(model):
                 while not it.finished:
                     w = it[0]
                     allWeights.append(abs(w)/tensor_max)
+                    allWeightsNonRel.append(abs(w))
                     weightsByLayer.append(abs(w)/tensor_max)
+                    weightsByLayerNonRel.append(abs(w))
                     it.iternext()
             if len(weightsByLayer)>0:
                 allWeightsByLayer[layer.name] = np.array(weightsByLayer)
-    return np.array(allWeights), allWeightsByLayer 
+                allWeightsByLayerNonRel[layer.name] = np.array(weightsByLayerNonRel)
+    return np.array(allWeights), allWeightsByLayer, np.array(allWeightsNonRel), allWeightsByLayerNonRel
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -64,12 +71,15 @@ if __name__ == "__main__":
     parser.add_option('-o','--outputModel'   ,action='store',type='string',dest='outputModel'   ,default='prune_simple/pruned_model.h5', help='output directory')
     (options,args) = parser.parse_args()
 
+    from models import three_layer_model
+    from keras.layers import Input
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
-    
+    model.load_weights(options.inputModel)
+
     weightsPerLayer = {}
     droppedPerLayer = {}
     binaryTensorPerLayer = {}
-    allWeightsArray,allWeightsByLayer = getWeightArray(model)
+    allWeightsArray,allWeightsByLayer,allWeightsArrayNonRel,allWeightsByLayerNonRel = getWeightArray(model)
     if options.relative_weight_percentile is not None:
         relative_weight_max = np.percentile(allWeightsArray,options.relative_weight_percentile,axis=-1)
     elif options.relative_weight_max is not None:
@@ -136,13 +146,17 @@ if __name__ == "__main__":
         your_percentile = options.relative_weight_percentile
     else:
         your_percentile = stats.percentileofscore(allWeightsArray, relative_weight_max)
-    percentiles = [5,16,50,84,95,your_percentile]
-    colors = ['r','r','r','r','r','g']
+    #percentiles = [5,16,50,84,95,your_percentile]
+    percentiles = [5,95,your_percentile]
+    #colors = ['r','r','r','r','r','g']
+    colors = ['r','r','g']
     vlines = np.percentile(allWeightsArray,percentiles,axis=-1)
     xmin = np.amin(allWeightsArray[np.nonzero(allWeightsArray)])
     xmax = np.amax(allWeightsArray)
-    bins = np.linspace(xmin, xmax, 100)
-    logbins = np.geomspace(xmin, xmax, 100)
+    xmin = 6e-8
+    xmax = 1
+    bins = np.linspace(xmin, xmax, 50)
+    logbins = np.geomspace(xmin, xmax, 50)
     
     plt.figure()
     #plt.hist(allWeightsArray,bins=bins)
@@ -167,13 +181,36 @@ if __name__ == "__main__":
     plt.legend(prop={'size':10})
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
+    
     for vline, percentile, color in zip(vlines, percentiles, colors):
         if percentile==0: continue
         if vline < xmin: continue
+        xAdd = 0
+        yAdd = 0
+        #if plotPercentile5 and percentile==84:
+        #    xAdd=0.2
+        #if plotPercentile16 and percentile==95:
+        #    xAdd=1.2
         plt.axvline(vline, 0, 1, color=color, linestyle='dashed', linewidth=1, label = '%s%%'%percentile)
-        plt.text(vline, ymax+0.01*(ymax-ymin), '%s%%'%percentile, color=color, horizontalalignment='center')
+        plt.text(vline+xAdd, ymax+0.01*(ymax-ymin)+yAdd, '%s%%'%percentile, color=color, horizontalalignment='center')
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Relative Weights')
+    plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))
 
     
+    xmin = np.amin(allWeightsArrayNonRel[np.nonzero(allWeightsArrayNonRel)])
+    xmax = np.amax(allWeightsArrayNonRel)
+    #bins = np.linspace(xmin, xmax, 100)
+    bins = np.geomspace(xmin, xmax, 50)
+    plt.figure()
+    #plt.hist(allWeightsArrayNonRel,bins=bins)
+    plt.hist(allWeightsByLayerNonRel.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    plt.semilogx(basex=2)
+    plt.legend(prop={'size':10})
+    plt.ylabel('Number of Weights')
+    plt.xlabel('Absolute Value of Weights')
+    plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+    plt.savefig(options.outputModel.replace('.h5','_weight_nonrel_histogram_logx.pdf'))
