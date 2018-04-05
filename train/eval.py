@@ -16,6 +16,8 @@ from sklearn.metrics import roc_curve, auc
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
+from sklearn.metrics import confusion_matrix
+import itertools
 from constraints import ZeroSomeWeights
 from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
@@ -24,6 +26,39 @@ from train import parse_config, get_features
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
+# confusion matrix code from Maurizio
+# /eos/user/m/mpierini/DeepLearning/ML4FPGA/jupyter/HbbTagger_Conv1D.ipynb
+def plot_confusion_matrix(cm, classes,
+                          normalize=False, 
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    #plt.title(title)
+    cbar = plt.colorbar()
+    plt.clim(0,1)
+    cbar.set_label(title)
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    #plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
 
 def makeRoc(features_val, labels, labels_val, model, outputDir):
     print 'in makeRoc()'
@@ -55,6 +90,7 @@ def makeRoc(features_val, labels, labels_val, model, outputDir):
     plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
     #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig('%s/ROC.pdf'%(options.outputDir))
+    return predict_test
 
     
 def _byteify(data, ignore_dicts = False):
@@ -96,8 +132,28 @@ if __name__ == "__main__":
 
     model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
 
-    makeRoc(X_test, labels, y_test, model, options.outputDir)
+    y_predict = makeRoc(X_test, labels, y_test, model, options.outputDir)
+    y_test_proba = y_test.argmax(axis=1)
+    y_predict_proba = y_predict.argmax(axis=1)
+    # Compute non-normalized confusion matrix
+    cnf_matrix = confusion_matrix(y_test_proba, y_predict_proba)
+    np.set_printoptions(precision=2)
+    # Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes=[l.replace('j_','') for l in labels],
+                              title='Confusion matrix')
+    plt.figtext(0.28, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.38, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+    plt.savefig(options.outputDir+"/confusion_matrix.pdf")
+    # Plot normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes=[l.replace('j_','') for l in labels], normalize=True,
+                              title='Normalized confusion matrix')
 
+    plt.figtext(0.28, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
+    #plt.figtext(0.38, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
+    plt.savefig(options.outputDir+"/confusion_matrix_norm.pdf")
+        
     import json
 
     if os.path.isfile('%s/full_info.log'%os.path.dirname(options.inputModel)):
@@ -129,3 +185,5 @@ if __name__ == "__main__":
         plt.xlabel('epoch')
         plt.ylabel('accuracy')
         plt.savefig(options.outputDir+"/acc.pdf")
+
+        
