@@ -23,6 +23,8 @@ from keras.utils.generic_utils import get_custom_objects
 get_custom_objects().update({"ZeroSomeWeights": ZeroSomeWeights})
 import yaml
 from train import parse_config, get_features
+from quantized_layers import Clip, BinaryDense, TernaryDense, QuantizedDense
+from models import binary_tanh, ternary_tanh, quantized_relu
 
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
@@ -122,15 +124,22 @@ if __name__ == "__main__":
 
     yamlConfig = parse_config(options.config)
     
-    #if os.path.isdir(options.outputDir):
-    #    raise Exception('output directory must not exists yet')
-    #else:
-    #    os.mkdir(options.outputDir)
+    if os.path.isdir(options.outputDir):
+        raise Exception('output directory must not exists yet')
+    else:
+        os.mkdir(options.outputDir)
 
     X_train_val, X_test, y_train_val, y_test, labels  = get_features(options, yamlConfig)
 
 
-    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights})
+    model = load_model(options.inputModel, custom_objects={'ZeroSomeWeights':ZeroSomeWeights,
+                                                           'BinaryDense': BinaryDense,
+                                                           'TernaryDense': TernaryDense,
+                                                           'QuantizedDense': QuantizedDense,
+                                                           'binary_tanh': binary_tanh,
+                                                           'ternary_tanh': ternary_tanh,
+                                                           'quantized_relu': quantized_relu,
+                                                           'Clip': Clip})
 
     y_predict = makeRoc(X_test, labels, y_test, model, options.outputDir)
     y_test_proba = y_test.argmax(axis=1)

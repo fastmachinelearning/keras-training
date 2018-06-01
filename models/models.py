@@ -1,9 +1,23 @@
-from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM, BatchNormalization
-from keras.models import Model
+from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM, BatchNormalization, Activation
+from keras.models import Model, Sequential
 from keras.regularizers import l1
 import h5py
 from constraints import *
+from quantized_layers import BinaryDense, TernaryDense, QuantizedDense
+from quantized_ops import binary_tanh as binary_tanh_op
+from quantized_ops import ternarize
+from quantized_ops import quantized_relu as quantize_op
 
+def binary_tanh(x):
+    return binary_tanh_op(x)
+
+def ternary_tanh(x):
+    x = K.clip(x, -1, 1)
+    return ternarize(x)
+
+def quantized_relu(x):
+    return quantize_op(x,nb=4)
+    
 def dense_model(Inputs, nclasses, l1Reg=0, dropoutRate=0.25):
     """
     Dense matrix, defaults similar to 2016 DeepCSV training
@@ -60,6 +74,77 @@ def three_layer_model(Inputs, nclasses, l1Reg=0):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
+def three_layer_model_binary(Inputs, nclasses, l1Reg=0):
+    """
+    Three hidden layers model
+    """
+     
+    model = Sequential()
+    
+    model.add(BinaryDense(64, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc1', input_shape=(16,)))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn1'))
+    model.add(Activation(binary_tanh, name='act{}'.format(1)))
+    
+    model.add(BinaryDense(32, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc2'))  
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn2'))
+    model.add(Activation(binary_tanh, name='act{}'.format(2)))  
+    
+    model.add(BinaryDense(32, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc3'))   
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn3'))
+    model.add(Activation(binary_tanh, name='act{}'.format(3)))  
+        
+    model.add(BinaryDense(nclasses, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='output'))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn'))
+    
+    return model                                                       
+
+def three_layer_model_ternary(Inputs, nclasses, l1Reg=0):
+    """
+    Three hidden layers model
+    """
+     
+    model = Sequential()
+    
+    model.add(TernaryDense(64, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc1', input_shape=(16,)))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn1'))
+    model.add(Activation(ternary_tanh, name='act{}'.format(1)))     
+    
+    model.add(TernaryDense(32, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc2'))  
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn2'))
+    model.add(Activation(ternary_tanh, name='act{}'.format(2)))  
+    
+    model.add(TernaryDense(32, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc3'))   
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn3'))
+    model.add(Activation(ternary_tanh, name='act{}'.format(3)))      
+    
+    model.add(TernaryDense(nclasses, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='output'))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn'))
+    
+    return model 
+
+def three_layer_model_qnn(Inputs, nclasses, l1Reg=0):
+    """
+    Three hidden layers model
+    """
+     
+    model = Sequential()
+    model.add(QuantizedDense(64, nb=4, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc1', input_shape=(16,)))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn1'))
+    model.add(Activation(quantized_relu, name='act{}'.format(1)))     
+    
+    model.add(QuantizedDense(32, nb=4, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc2'))  
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn2'))
+    model.add(Activation(quantized_relu, name='act{}'.format(2)))  
+    
+    model.add(QuantizedDense(32, nb=4, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='fc3'))   
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn3'))
+    model.add(Activation(quantized_relu, name='act{}'.format(3)))      
+    
+    model.add(QuantizedDense(nclasses, nb=4, H='Glorot', kernel_lr_multiplier='Glorot', use_bias=False, name='output'))
+    model.add(BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn'))
+    
+    return model 
+    
 def three_layer_model_tanh(Inputs, nclasses, l1Reg=0):
     """
     Two hidden layers model
