@@ -8,15 +8,15 @@ def dense_model(Inputs, nclasses, l1Reg=0, dropoutRate=0.25):
     """
     Dense matrix, defaults similar to 2016 DeepCSV training
     """
-    x = Dense(100, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu')(Inputs)
+    x = Dense(200, activation='relu', kernel_initializer='lecun_uniform', name='fc1_relu', W_regularizer=l1(l1Reg))(Inputs)
     x = Dropout(dropoutRate)(x)
-    x = Dense(100, activation='relu', kernel_initializer='lecun_uniform', name='fc2_relu')(x)
+    x = Dense(200, activation='relu', kernel_initializer='lecun_uniform', name='fc2_relu', W_regularizer=l1(l1Reg))(x)
     x = Dropout(dropoutRate)(x)
-    x = Dense(100, activation='relu', kernel_initializer='lecun_uniform', name='fc3_relu')(x)
+    x = Dense(200, activation='relu', kernel_initializer='lecun_uniform', name='fc3_relu', W_regularizer=l1(l1Reg))(x)
     x = Dropout(dropoutRate)(x)
-    x = Dense(100, activation='relu', kernel_initializer='lecun_uniform', name='fc4_relu')(x)
+    x = Dense(200, activation='relu', kernel_initializer='lecun_uniform', name='fc4_relu', W_regularizer=l1(l1Reg))(x)
     x = Dropout(dropoutRate)(x)
-    x = Dense(100, activation='relu', kernel_initializer='lecun_uniform', name='fc5_relu')(x)
+    x = Dense(200, activation='relu', kernel_initializer='lecun_uniform', name='fc5_relu', W_regularizer=l1(l1Reg))(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name = 'output_softmax')(x)
     model = Model(inputs=Inputs, outputs=predictions)
     return model
