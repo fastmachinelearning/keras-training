@@ -39,7 +39,7 @@ python convert.py -t t_allpar_new \
 ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.root
 ```
 
-You can also copy this file directly from: https://cernbox.cern.ch/index.php/s/aGjXWDrDpugHeMf
+You can also copy this file directly from: https://cernbox.cern.ch/index.php/s/jvFd5MoWhGs1l5v
 
 ## Training and evaluation
 To run a simple training:
