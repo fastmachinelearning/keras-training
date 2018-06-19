@@ -99,6 +99,14 @@ def get_features(options, yamlConfig):
         X_train_val = scaler.transform(X_train_val)
         X_test = scaler.transform(X_test)
 
+    #Normalize inputs
+    if yamlConfig['NormalizeInputs'] and yamlConfig['InputType']!='Conv1D' and yamlConfig['InputType']!='Conv2D' and yamlConfig['KerasLoss']=='squared_hinge':
+        scaler = preprocessing.MinMaxScaler().fit(X_train_val)
+        X_train_val = scaler.transform(X_train_val)
+        X_test = scaler.transform(X_test)
+        y_train_val = y_train_val * 2 - 1
+        y_test = y_test * 2 - 1
+        
     #Normalize conv inputs
     if yamlConfig['NormalizeInputs'] and yamlConfig['InputType']=='Conv1D':
         reshape_X_train_val = X_train_val.reshape(X_train_val.shape[0]*X_train_val.shape[1],X_train_val.shape[2])
@@ -156,5 +164,5 @@ if __name__ == "__main__":
                             lr_minimum=0.0000001,
                             outputDir=options.outputDir)
 
-    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 200,
+    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 100,
                     validation_split = 0.25, shuffle = True, callbacks = callbacks.callbacks)
