@@ -1,3 +1,4 @@
+from __future__ import print_function
 import ROOT as rt
 from array import array
 import random
@@ -92,10 +93,10 @@ def getTree(myTree, oldTree, listOfBranches, additionalBranches = []):
     s1 = MyStruct1()
     for branch in listOfBranches:
         if oldTree.GetBranchStatus(branch.GetName()):
-            print branch.GetName(), branch.GetClassName()
+            print(branch.GetName(), branch.GetClassName())
             myTree.Branch(branch.GetName(), rt.AddressOf(s1,branch.GetName()),'%s/F'%branch.GetName())
     for branchName in additionalBranches:
-        print branchName
+        print(branchName)
         myTree.Branch(branchName, rt.AddressOf(s1,branchName),'%s/F'%branchName)
     os.system("rm tempMacro_%d.C"%rando)
     return s1
@@ -200,9 +201,9 @@ def addLeaves(tree,fileName):
             newtree.Fill()
     
         if i % 3000 == 0:
-            print "%s of %s: %s" % (i,events,leafValues)
+            print("%s of %s: %s" % (i,events,leafValues))
     newtree.Write()
-    print "Saved tree with %s events . . ." % ( newtree.GetEntries() )
+    print("Saved tree with %s events . . ." % ( newtree.GetEntries() ))
     newfile.Close()
     del newfile
     #end of AddLeaves()

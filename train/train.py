@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import os
 import keras
@@ -19,7 +20,7 @@ import models
 # To turn off GPU
 #os.environ['CUDA_VISIBLE_DEVICES'] = ''
 def print_model_to_json(keras_model, outfile_name):
-    outfile = open(outfile_name,'wb')
+    outfile = open(outfile_name,'w')
     jsonString = keras_model.to_json()
     import json
     with outfile:
@@ -32,8 +33,8 @@ def get_features(options, yamlConfig):
     h5File = h5py.File(options.inputFile)
     treeArray = h5File[options.tree][()]
 
-    print treeArray.shape
-    print treeArray.dtype.names
+    print(treeArray.shape)
+    print(treeArray.dtype.names)
     
     # List of features to use
     features = yamlConfig['Inputs']
@@ -52,7 +53,7 @@ def get_features(options, yamlConfig):
     labels_val = labels_df.values     
     if 'Conv' in yamlConfig['InputType']:
         labels_val = labels_val[:,:-1] # drop the last label j_pt
-        print labels_val.shape
+        print(labels_val.shape)
 
     if yamlConfig['InputType']=='Conv1D':
         features_2dval = np.zeros((len(labels_df), yamlConfig['MaxParticles'], len(features)-1))
@@ -123,7 +124,7 @@ def get_features(options, yamlConfig):
 ## Config module
 def parse_config(config_file) :
 
-    print "Loading configuration from " + str(config_file)
+    print("Loading configuration from", config_file)
     config = open(config_file, 'r')
     return yaml.load(config)
 
