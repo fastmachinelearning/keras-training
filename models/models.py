@@ -74,6 +74,33 @@ def three_layer_model(Inputs, nclasses, l1Reg=0):
     model = Model(inputs=Inputs, outputs=predictions)
     return model
 
+def three_layer_model_batch_norm(Inputs, nclasses, l1Reg=0):
+    """
+    Two hidden layers model
+    """
+    x = Dense(64, kernel_initializer='lecun_uniform', 
+              name='fc1_relu', W_regularizer=l1(l1Reg))(Inputs)
+    x = BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn1')(x)
+    x = Activation(activation='relu', name='relu1')(x)
+              
+    x = Dense(32, kernel_initializer='lecun_uniform', 
+              name='fc2_relu', W_regularizer=l1(l1Reg))(x)
+    x = BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn2')(x)
+    x = Activation(activation='relu', name='relu2')(x)
+    
+    x = Dense(32, kernel_initializer='lecun_uniform', 
+              name='fc3_relu', W_regularizer=l1(l1Reg))(x)
+    x = BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn3')(x)
+    x = Activation(activation='relu', name='relu3')(x)
+    
+    x = Dense(nclasses, kernel_initializer='lecun_uniform', 
+                        name='output_softmax', W_regularizer=l1(l1Reg))(x)
+    x = BatchNormalization(epsilon=1e-6, momentum=0.9, name='bn4')(x)
+    predictions = Activation(activation='softmax', name='softmax')(x)
+
+    model = Model(inputs=Inputs, outputs=predictions)
+    return model
+    
 def three_layer_model_binary(Inputs, nclasses, l1Reg=0):
     """
     Three hidden layers model
