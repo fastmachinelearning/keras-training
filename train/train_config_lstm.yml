@@ -16,9 +16,10 @@ Labels:
     - j_pt
     
 KerasModel: lstm_model
-KerasModelRetrain: rnn_model_constraint
+KerasModelRetrain: lstm_model_constraint
 KerasLoss: categorical_crossentropy
-L1Reg: 0
+L1Reg: 0.0001
+L1RegR: 0.001
 NormalizeInputs: 1
 InputType: Conv1D
-MaxParticles: 50
+MaxParticles: 20

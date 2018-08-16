@@ -66,7 +66,6 @@ def get_features(options, yamlConfig):
                 features_val_i =  features_val_i[0:yamlConfig['MaxParticles'],:]
             else:        
                 features_val_i = np.concatenate([features_val_i, np.zeros((yamlConfig['MaxParticles']-nParticles, len(features)-1))])
-                
             features_2dval[i, :, :] = features_val_i
 
         features_val = features_2dval
@@ -146,8 +145,10 @@ if __name__ == "__main__":
     
     #from models import three_layer_model
     model = getattr(models, yamlConfig['KerasModel'])    
-
-    keras_model = model(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'] )
+    if 'L1RegR' in yamlConfig:
+        keras_model = model(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], l1RegR=yamlConfig['L1RegR'] )
+    else:
+        keras_model = model(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'] )
 
     print_model_to_json(keras_model,options.outputDir + '/' + 'KERAS_model.json')
 
@@ -164,5 +165,5 @@ if __name__ == "__main__":
                             lr_minimum=0.0000001,
                             outputDir=options.outputDir)
 
-    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 100,
+    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 500,
                     validation_split = 0.25, shuffle = True, callbacks = callbacks.callbacks)
