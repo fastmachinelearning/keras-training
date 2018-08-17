@@ -339,7 +339,7 @@ def lstm_model_constraint(Inputs, nclasses, l1Reg=0,l1RegR=0,h5fName=None):
     x = LSTM(16,return_sequences=False,kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),name='lstm_lstm',recurrent_constraint = zero_some_weights(binary_tensor=h5f['lstm_lstm'][()].tolist()))(Inputs)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', kernel_constraint = zero_some_weights(binary_tensor=h5f['rnn_densef'][()].tolist()), name='rnn_densef')(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def lstm_model_full(Inputs, nclasses, l1Reg=0):
