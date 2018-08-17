@@ -1,3 +1,4 @@
+from __future__ import print_function
 from keras.layers import Dense, Dropout, Flatten, Convolution2D, merge, Convolution1D, Conv2D, Conv1D, Input, SpatialDropout1D, GRU, MaxPooling1D, AveragePooling1D, SimpleRNN, LSTM, BatchNormalization, Activation
 from keras.models import Model, Sequential
 from keras.regularizers import l1
@@ -255,7 +256,7 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
                         name='output_softmax', W_regularizer=l1(l1Reg))(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
@@ -283,7 +284,7 @@ def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
                         name='output_softmax', W_regularizer=l1(l1Reg), 
                         kernel_constraint = zero_some_weights(binary_tensor=h5f['output_softmax'][()].tolist()))(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def conv2d_model(Inputs, nclasses, l1Reg=0):
@@ -303,7 +304,7 @@ def conv2d_model(Inputs, nclasses, l1Reg=0):
     x = Dense(32, activation='relu')(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='output_softmax')(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def rnn_model(Inputs, nclasses, l1Reg=0):
@@ -315,7 +316,7 @@ def rnn_model(Inputs, nclasses, l1Reg=0):
     x = Dropout(0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def lstm_model(Inputs, nclasses, l1Reg=0,l1RegR=0):
@@ -327,7 +328,7 @@ def lstm_model(Inputs, nclasses, l1Reg=0,l1RegR=0):
     x = Dropout(0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 def lstm_model_constraint(Inputs, nclasses, l1Reg=0,l1RegR=0,h5fName=None):
@@ -356,10 +357,10 @@ def lstm_model_full(Inputs, nclasses, l1Reg=0):
     x = Dropout(0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
     model = Model(inputs=Inputs, outputs=predictions)
-    print model.summary()
+    print(model.summary())
     return model
 
 if __name__ == '__main__':
-    print conv1d_model(Input(shape=(100,10,)), 2).summary()
+    print(conv1d_model(Input(shape=(100,10,)), 2).summary())
     
-    print conv2d_model(Input(shape=(10,10,3,)), 2).summary()
+    print(conv2d_model(Input(shape=(10,10,3,)), 2).summary())

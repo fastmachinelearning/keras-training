@@ -58,7 +58,7 @@ class Losstimer(Callback):
         if (batch % self.every) != 0: return
         elapsed = time() - self.start
         cop = {}
-        for i, j in logs.iteritems():
+        for i, j in logs.items():
             cop[i] = float(j)
         cop['elapsed'] = elapsed
         self.points.append(cop)

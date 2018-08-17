@@ -1,3 +1,4 @@
+from __future__ import print_function
 from root_numpy import root2array, tree2array
 from root_numpy import testdata
 #from rootpy.root2hdf5 import root2hdf5
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     (options,args) = parser.parse_args()
     
     for fileName in args:
-        print 'converting %s -> %s'%(fileName, fileName.replace('.root','.z'))
+        print('converting %s -> %s'%(fileName, fileName.replace('.root','.z')))
         # Convert a TTree in a ROOT file into a NumPy structured array
         arr = root2array(fileName, options.tree)
         # Shuffle array

@@ -1,3 +1,5 @@
+from __future__ import print_function
+import six
 import sys
 import os
 from optparse import OptionParser
@@ -63,7 +65,8 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 def makeRoc(features_val, labels, labels_val, model, outputDir):
-    print 'in makeRoc()'
+
+    print('in makeRoc()')
     if 'j_index' in labels: labels.remove('j_index')
         
     predict_test = model.predict(features_val)
@@ -98,7 +101,7 @@ def makeRoc(features_val, labels, labels_val, model, outputDir):
     
 def _byteify(data, ignore_dicts = False):
     # if this is a unicode string, return its string representation
-    if isinstance(data, unicode):
+    if isinstance(data, six.text_type):
         return data.encode('utf-8')
     # if this is a list of values, return list of byteified values
     if isinstance(data, list):
@@ -108,7 +111,7 @@ def _byteify(data, ignore_dicts = False):
     if isinstance(data, dict) and not ignore_dicts:
         return {
             _byteify(key, ignore_dicts=True): _byteify(value, ignore_dicts=True)
-            for key, value in data.iteritems()
+            for key, value in data.items()
         }
     # if it's anything else, return it in its original form
     return data
@@ -170,15 +173,15 @@ if __name__ == "__main__":
         f = open('%s/full_info.log'%os.path.dirname(options.inputModel))
         myListOfDicts = json.load(f, object_hook=_byteify)
         myDictOfLists = {}
-        for key, val in myListOfDicts[0].iteritems():
+        for key, val in myListOfDicts[0].items():
             myDictOfLists[key] = []
         for i, myDict in enumerate(myListOfDicts):
-            for key, val in myDict.iteritems():
+            for key, val in myDict.items():
                 myDictOfLists[key].append(myDict[key])
 
         plt.figure()
-        val_loss = np.asarray(myDictOfLists['val_loss'])
-        loss = np.asarray(myDictOfLists['loss'])
+        val_loss = np.asarray(myDictOfLists[b'val_loss'])
+        loss = np.asarray(myDictOfLists[b'loss'])
         plt.plot(val_loss, label='validation')
         plt.plot(loss, label='train')
         plt.legend()
@@ -187,8 +190,8 @@ if __name__ == "__main__":
         plt.savefig(options.outputDir+"/loss.pdf")
 
         plt.figure()
-        val_acc = np.asarray(myDictOfLists['val_acc'])
-        acc = np.asarray(myDictOfLists['acc'])
+        val_acc = np.asarray(myDictOfLists[b'val_acc'])
+        acc = np.asarray(myDictOfLists[b'acc'])
         plt.plot(val_acc, label='validation')
         plt.plot(acc, label='train')
         plt.legend()
