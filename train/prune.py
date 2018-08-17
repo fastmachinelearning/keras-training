@@ -157,11 +157,18 @@ if __name__ == "__main__":
     xmax = 1
     bins = np.linspace(xmin, xmax, 50)
     logbins = np.geomspace(xmin, xmax, 50)
+
+    labels = []
+    histos = []
+    for key in reversed(sorted(allWeightsByLayer.keys())):
+        labels.append(key)
+        histos.append(allWeightsByLayer[key])        
     
     plt.figure()
     #plt.hist(allWeightsArray,bins=bins)
-    plt.hist(allWeightsByLayer.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
-    plt.legend(prop={'size':10})
+    #plt.hist(allWeightsByLayer.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    plt.hist(histos,bins=bins,histtype='step',stacked=False,label=labels)
+    plt.legend(prop={'size':10}, frameon=False)
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     for vline, percentile, color in zip(vlines, percentiles, colors):
@@ -176,9 +183,10 @@ if __name__ == "__main__":
         
     plt.figure()
     #plt.hist(allWeightsArray,bins=logbins)
-    plt.hist(allWeightsByLayer.values(),bins=logbins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    #plt.hist(allWeightsByLayer.values(),bins=logbins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    plt.hist(histos,bins=logbins,histtype='step',stacked=False,label=labels)
     plt.semilogx()
-    plt.legend(prop={'size':10})
+    plt.legend(prop={'size':10}, frameon=False)
     axis = plt.gca()
     ymin, ymax = axis.get_ylim()
     
@@ -199,16 +207,23 @@ if __name__ == "__main__":
     #plt.figtext(0.35, 0.90,'preliminary', style='italic', wrap=True, horizontalalignment='center', fontsize=14) 
     plt.savefig(options.outputModel.replace('.h5','_weight_histogram_logx.pdf'))
 
-    
+
+    labels = []
+    histos = []
+    for key in reversed(sorted(allWeightsByLayerNonRel.keys())):
+        labels.append(key)
+        histos.append(allWeightsByLayerNonRel[key])
+        
     xmin = np.amin(allWeightsArrayNonRel[np.nonzero(allWeightsArrayNonRel)])
     xmax = np.amax(allWeightsArrayNonRel)
     #bins = np.linspace(xmin, xmax, 100)
     bins = np.geomspace(xmin, xmax, 50)
     plt.figure()
     #plt.hist(allWeightsArrayNonRel,bins=bins)
-    plt.hist(allWeightsByLayerNonRel.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    #plt.hist(allWeightsByLayerNonRel.values(),bins=bins,histtype='bar',stacked=True,label=allWeightsByLayer.keys())
+    plt.hist(histos,bins=bins,histtype='step',stacked=False,label=labels)
     plt.semilogx(basex=2)
-    plt.legend(prop={'size':10})
+    plt.legend(prop={'size':10}, frameon=False, loc='upper left')
     plt.ylabel('Number of Weights')
     plt.xlabel('Absolute Value of Weights')
     plt.figtext(0.25, 0.90,'hls4ml',fontweight='bold', wrap=True, horizontalalignment='right', fontsize=14)
