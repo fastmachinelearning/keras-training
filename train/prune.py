@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import os
 import math
@@ -85,7 +86,7 @@ if __name__ == "__main__":
     elif options.relative_weight_max is not None:
         relative_weight_max = options.relative_weight_max
     else:
-        print 'Need to set pruning criteria'
+        print('Need to set pruning criteria')
         sys.exit()
         
     for layer in model.layers:     
@@ -114,30 +115,30 @@ if __name__ == "__main__":
                 while not it.finished:
                     w = it[0]
                     if abs(w)/tensor_max < relative_weight_max:
-                        #print "small relative weight %e/%e = %e -> 0"%(abs(w), tensor_max, abs(w)/tensor_max)
+                        #print("small relative weight %e/%e = %e -> 0"%(abs(w), tensor_max, abs(w)/tensor_max))
                         w[...] = 0
                         droppedPerLayer[layer.name].append((it.multi_index, abs(w)))
                         binaryTensorPerLayer[layer.name][it.multi_index] = 0
                     it.iternext()
-            #print '%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name,layer.count_params())
+            #print('%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name,layer.count_params()))
             #converted_w = convert_kernel(original_w)
             converted_w = original_w
             layer.set_weights(converted_w)
 
 
-    print 'Summary:'
+    print('Summary:')
     totalDropped = sum([len(droppedPerLayer[layer.name]) for layer in model.layers])
     for layer in model.layers:
-        print '%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name, layer.count_params())
-    print '%i total weights dropped out of %i total weights'%(totalDropped,model.count_params())
-    print '%.1f%% compression'%(100.*totalDropped/model.count_params())
+        print('%i weights dropped from %s out of %i weights'%(len(droppedPerLayer[layer.name]),layer.name, layer.count_params()))
+    print('%i total weights dropped out of %i total weights'%(totalDropped,model.count_params()))
+    print('%.1f%% compression'%(100.*totalDropped/model.count_params()))
     model.save(options.outputModel)
     model.save_weights(options.outputModel.replace('.h5','_weights.h5'))
     print_model_to_json(model, options.outputModel.replace('.h5','.json'))
     
     # save binary tensor in h5 file 
     h5f = h5py.File(options.outputModel.replace('.h5','_drop_weights.h5'),'w')
-    for layer, binary_tensor in binaryTensorPerLayer.iteritems():
+    for layer, binary_tensor in binaryTensorPerLayer.items():
         h5f.create_dataset('%s'%layer, data = binaryTensorPerLayer[layer])
     h5f.close()
 
