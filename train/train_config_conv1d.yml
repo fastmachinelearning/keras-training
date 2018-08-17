@@ -6,7 +6,7 @@ Inputs:
     - j1_deltaR
     - j1_costhetarel
     - j1_pdgid
-    - j_pt
+    - j_index
     
 Labels:
     - j_g
@@ -14,7 +14,7 @@ Labels:
     - j_w
     - j_z
     - j_t
-    - j_pt
+    - j_index
     
 KerasModel: conv1d_model
 KerasModelRetrain: conv1d_model_constraint

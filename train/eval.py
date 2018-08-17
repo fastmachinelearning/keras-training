@@ -64,6 +64,7 @@ def plot_confusion_matrix(cm, classes,
 
 def makeRoc(features_val, labels, labels_val, model, outputDir):
     print 'in makeRoc()'
+    if 'j_index' in labels: labels.remove('j_index')
         
     predict_test = model.predict(features_val)
 
