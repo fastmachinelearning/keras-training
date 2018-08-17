@@ -42,7 +42,10 @@ if __name__ == "__main__":
     model_constraint = getattr(models, yamlConfig['KerasModelRetrain'])
 
     # Instantiate new model with added custom constraints
-    keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
+    if 'L1RegR' in yamlConfig:
+        keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], l1RegR=yamlConfig['L1RegR'], h5fName = options.dropWeights )
+    else:
+        keras_model = model_constraint(Input(shape=X_train_val.shape[1:]), y_train_val.shape[1], l1Reg=yamlConfig['L1Reg'], h5fName = options.dropWeights )
 
     print_model_to_json(keras_model,options.outputDir + '/' + 'KERAS_model.json')
         
@@ -61,5 +64,5 @@ if __name__ == "__main__":
                             lr_minimum=0.0000001,
                             outputDir=options.outputDir)
 
-    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 100,
+    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 250,
                     validation_split = 0.25, shuffle = True, callbacks = callbacks.callbacks)

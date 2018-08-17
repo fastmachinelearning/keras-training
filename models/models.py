@@ -318,18 +318,28 @@ def rnn_model(Inputs, nclasses, l1Reg=0):
     print model.summary()
     return model
 
-def lstm_model(Inputs, nclasses, l1Reg=0):
+def lstm_model(Inputs, nclasses, l1Reg=0,l1RegR=0):
     """
     Basic LSTM model
     """
-    x = LSTM(72,return_sequences=True)(x)
-    x = Flatten()(x)
+    x = LSTM(16,return_sequences=False,  kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),activation='relu',kernel_initializer='lecun_uniform',name='lstm_lstm')(Inputs)
+    #x = Flatten()(x)
     x = Dropout(0.1)(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
     model = Model(inputs=Inputs, outputs=predictions)
     print model.summary()
     return model
 
+def lstm_model_constraint(Inputs, nclasses, l1Reg=0,l1RegR=0,h5fName=None):
+    """
+    Basic LSTM model
+    """
+    h5f = h5py.File(h5fName)
+    x = LSTM(16,return_sequences=False,kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),name='lstm_lstm',recurrent_constraint = zero_some_weights(binary_tensor=h5f['lstm_lstm'][()].tolist()))(Inputs)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', kernel_constraint = zero_some_weights(binary_tensor=h5f['rnn_densef'][()].tolist()), name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print model.summary()
+    return model
 
 def lstm_model_full(Inputs, nclasses, l1Reg=0):
     """
