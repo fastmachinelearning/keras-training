@@ -110,7 +110,7 @@ def addLeaves(tree,fileName):
     particleBranches = [branch.GetName() for branch in tree.GetListOfBranches() if 'j1_' in branch.GetName()]
     additionalBranches = []
     if len(particleBranches)>0:
-        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel','j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR','j1_costheta','j1_costhetarel','j1_e1mcosthetarel']
+        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel','j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR','j1_costheta','j1_costhetarel','j1_e1mcosthetarel','j_index']
 
     tree.SetBranchStatus("*",1)
     # remove these branches
@@ -126,6 +126,20 @@ def addLeaves(tree,fileName):
 
     for j in range(len(leaves)):
         newBranch = newtree.Branch( leaves[j].split('/')[0] , leafValues[j], leaves[j])
+
+    if 'gg' in fileName:
+      jet_index = 0
+    elif 'qq' in fileName:
+      jet_index = 100000000
+    elif 'WW' in fileName:
+      jet_index = 200000000
+    elif 'ZZ' in fileName:
+      jet_index = 300000000
+    elif 'tt' in fileName:
+      jet_index = 400000000
+    else:
+      jet_index = 500000000
+
     for i in range(events):
         tree.GetEntry(i)
         isNaN = False
@@ -195,7 +209,9 @@ def addLeaves(tree,fileName):
                 setattr(s1, 'j1_phirel', float(delta_phi(particlePhi[i_particle],jet.Phi())))
                 setattr(s1, 'j1_phirot', float(y[i_particle]))
                 setattr(s1, 'j1_deltaR', float(jet.DeltaR(particle)))
+                setattr(s1, 'j_index', jet_index)
                 newtree.Fill()
+            jet_index += 1
         else:
             newtree.Fill()
     
