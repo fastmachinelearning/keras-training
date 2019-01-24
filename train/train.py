@@ -70,6 +70,9 @@ def get_features(options, yamlConfig):
             #features_val_i = features_val[index_values[0]:index_values[-1]+1,:-1] # drop the last feature j_index
             features_val_i = features_val[np.array(index_values),:]
             nParticles = len(features_val_i)
+            #print("before", features_val_i[:,0])
+            features_val_i = features_val_i[features_val_i[:,0].argsort()[::-1]] # sort descending by first value (ptrel, usually)
+            #print("after", features_val_i[:,0])
             if nParticles>yamlConfig['MaxParticles']:
                 features_val_i =  features_val_i[0:yamlConfig['MaxParticles'],:]
             else:        

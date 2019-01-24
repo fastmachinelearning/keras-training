@@ -13,8 +13,8 @@ Labels:
     - j_t
     - j_index
     
-KerasModel: conv1d_model
-KerasModelRetrain: conv1d_model_constraint
+KerasModel: conv1d_small_model
+KerasModelRetrain: conv1d_small_model_constraint
 KerasLoss: categorical_crossentropy
 L1Reg: 0
 NormalizeInputs: 1
