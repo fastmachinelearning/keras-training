@@ -1,0 +1,22 @@
+Inputs:
+    - j1_ptrel
+    - j1_etarot
+    - j1_phirot
+    - j1_erel
+    - j_index
+    
+Labels:
+    - j_g
+    - j_q
+    - j_w
+    - j_z
+    - j_t
+    - j_index
+    
+KerasModel: conv1d_model
+KerasModelRetrain: conv1d_model_constraint
+KerasLoss: categorical_crossentropy
+L1Reg: 0
+NormalizeInputs: 1
+InputType: Conv1D
+MaxParticles: 10
