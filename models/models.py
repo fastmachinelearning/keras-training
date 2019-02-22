@@ -360,6 +360,33 @@ def lstm_model_full(Inputs, nclasses, l1Reg=0):
     print(model.summary())
     return model
 
+def gru_model(Inputs, nclasses, l1Reg=0,l1RegR=0):
+    """                                                                                                                                                                                                                                                                         
+    Basic GRU model                                                                                                                                                                                                                                                             
+    """
+    x = GRU(20,kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),activation='relu', recurrent_activation='sigmoid', name='gru_selu',)(Inputs)
+    #x = GRU(20,kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),activation='selu', recurrent_activation='hard_sigmoid', name='gru_selu',)(Inputs)                                                                                                                
+    x = Dense(20,kernel_regularizer=l1(l1Reg),activation='relu', kernel_initializer='lecun_uniform', name='dense_relu')(x)
+    x = Dropout(0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print(model.summary())
+    return model
+
+def gru_model_constraint(Inputs, nclasses, l1Reg=0,l1RegR=0,h5fName=None):
+    """                                                                                                                                                                                                                                                                         
+    Basic GRU  model                                                                                                                                                                                                                                                            
+    """
+    h5f = h5py.File(h5fName)
+    x = GRU(20,kernel_regularizer=l1(l1Reg),recurrent_regularizer=l1(l1RegR),activation='selu',recurrent_activation='hard_sigmoid',name='gru_selu',recurrent_constraint = zero_some_weights(binary_tensor=h5f['gru_selu'][()].tolist()))(Inputs)
+    x = Dense(20,kernel_regularizer=l1(l1Reg),activation='relu', kernel_initializer='lecun_uniform',kernel_constraint = zero_some_weights(binary_tensor=h5f['dense_relu'][()].tolist()), name='dense_relu')(x)
+    x = Dropout(0.1)(x)
+    predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', kernel_constraint = zero_some_weights(binary_tensor=h5f['rnn_densef'][()].tolist()), name='rnn_densef')(x)
+    model = Model(inputs=Inputs, outputs=predictions)
+    print(model.summary())
+    return model
+
+
 if __name__ == '__main__':
     print(conv1d_model(Input(shape=(100,10,)), 2).summary())
     
