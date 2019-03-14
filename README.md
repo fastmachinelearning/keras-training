@@ -46,18 +46,18 @@ To run a simple training with L1 regularization (lamba = 1e-4):
 ```bash
 cd ~/keras-training/train
 python train.py -t t_allpar_new \
--i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
--c train_config_threelayer.yml \
--o train_simple_l10p0001/
+	-i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
+	-c train_config_threelayer.yml \
+	-o train_simple_l10p0001/
 ```
 
 and evaluate the training:
 ```bash
 python eval.py -t t_allpar_new \
--i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
--m train_simple/KERAS_check_best_model.h5 \
--c train_config_threelayer.yml \
--o eval_simple_l10p0001/
+	-i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
+	-m train_simple/KERAS_check_best_model.h5 \
+	-c train_config_threelayer.yml \
+	-o eval_simple_l10p0001/
 ```
 
 ## Pruning and retraining
@@ -66,28 +66,28 @@ percentile (relative weight percentile < 32.7%):
 ```bash
 mkdir -p prune_simple_l10p0001_33perc
 python prune.py -m train_simple_l10p0001/KERAS_check_best_model.h5 \
--o prune_simple_l10p0001_33perc/trained_model_33perc.h5 \
---relative-weight-percentile 32.7
+	-o prune_simple_l10p0001_33perc/trained_model_33perc.h5 \
+	--relative-weight-percentile 32.7
 ```
 
 and evaluate the pruned model:
 ```bash
 python eval.py -t t_allpar_new \
--i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
--m prune_simple_l10p0001_33perc/pruned_model.h5 \
--c train_config_threelayer.yml \
--o eval_simple_l10p0001_33perc/
+	-i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
+	-m prune_simple_l10p0001_33perc/pruned_model.h5 \
+	-c train_config_threelayer.yml \
+	-o eval_simple_l10p0001_33perc/
 ```
 
 To retrain the pruned model (keeping the pruned weights fixed to 0)
 with L1 regularization (lamba = 1e-4):
 ```bash
 python retrain.py -t t_allpar_new \
--i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
--o retrain_simple_l10p0001_33perc \
--m prune_simple_l10p0001_33perc/pruned_model.h5 \
--c train_config_threelayer.yml \
--d prune_simple_l10p0001_33perc/pruned_model_drop_weights.h5
+	-i ../data/processed-pythia82-lhc13-all-pt1-50k-r1_h022_e0175_t220_nonu_truth.z \
+	-o retrain_simple_l10p0001_33perc \
+	-m prune_simple_l10p0001_33perc/pruned_model.h5 \
+	-c train_config_threelayer.yml \
+	-d prune_simple_l10p0001_33perc/pruned_model_drop_weights.h5
 ```
 
 and prune again (this time 48 percent of the weights):
