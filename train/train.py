@@ -145,7 +145,8 @@ if __name__ == "__main__":
     yamlConfig = parse_config(options.config)
     
     if os.path.isdir(options.outputDir):
-        raise Exception('output directory must not exists yet')
+        #raise Exception('output directory must not exist yet')
+        raw_input("Warning: output directory exists. Press Enter to continue...")
     else:
         os.mkdir(options.outputDir)
 
@@ -173,5 +174,5 @@ if __name__ == "__main__":
                             lr_minimum=0.0000001,
                             outputDir=options.outputDir)
 
-    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 500,
+    keras_model.fit(X_train_val, y_train_val, batch_size = 1024, epochs = 100,
                     validation_split = 0.25, shuffle = True, callbacks = callbacks.callbacks)

@@ -129,7 +129,8 @@ if __name__ == "__main__":
     yamlConfig = parse_config(options.config)
     
     if os.path.isdir(options.outputDir):
-        raise Exception('output directory must not exists yet')
+        #raise Exception('output directory must not exist yet')
+        raw_input("Warning: output directory exists. Press Enter to continue...")
     else:
         os.mkdir(options.outputDir)
 
