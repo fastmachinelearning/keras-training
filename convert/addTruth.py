@@ -93,25 +93,28 @@ def getTree(myTree, oldTree, listOfBranches, additionalBranches = []):
     s1 = MyStruct1()
     for branch in listOfBranches:
         if oldTree.GetBranchStatus(branch.GetName()):
-            print(branch.GetName(), branch.GetClassName())
+            #print(branch.GetName(), branch.GetClassName())
             myTree.Branch(branch.GetName(), rt.AddressOf(s1,branch.GetName()),'%s/F'%branch.GetName())
     for branchName in additionalBranches:
-        print(branchName)
         myTree.Branch(branchName, rt.AddressOf(s1,branchName),'%s/F'%branchName)
+        
     os.system("rm tempMacro_%d.C"%rando)
     return s1
 
 
 def addLeaves(tree,fileName):
     events = tree.GetEntries()
-    leaves = ["j_g/I","j_q/I","j_w/I","j_z/I","j_t/I","j_undef/I"]
-    leafValues = [array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0]),array("I", [0])]
+    leaves = ["j_g/I", "j_q/I", "j_w/I", "j_z/I", "j_t/I", "j_undef/I","j_index/I"]
+    leafValues = [array("I", [0]), array("I", [0]), array("I", [0]), array("I", [0]), array("I", [0]), array("I", [0]), array("I", [0])]
     newfile = rt.TFile.Open(fileName.replace('.root','_truth.root'),'RECREATE')
+    #newfile = rt.TFile.Open('test.root','RECREATE')
 
     particleBranches = [branch.GetName() for branch in tree.GetListOfBranches() if 'j1_' in branch.GetName()]
     additionalBranches = []
     if len(particleBranches)>0:
-        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel','j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR','j1_costheta','j1_costhetarel','j1_e1mcosthetarel','j_index']
+        additionalBranches = ['j1_erel','j1_pt','j1_ptrel','j1_eta','j1_etarel',
+                              'j1_etarot','j1_phi','j1_phirel','j1_phirot','j1_deltaR',
+                              'j1_costheta','j1_costhetarel','j1_e1mcosthetarel']
 
     tree.SetBranchStatus("*",1)
     # remove these branches
@@ -123,25 +126,27 @@ def addLeaves(tree,fileName):
     tree.SetBranchStatus("j_tau21_b2_mmdt",0)
     
     newtree = rt.TTree(tree.GetName()+'_new',tree.GetName()+'_new')
-    s1 = getTree(newtree,tree,tree.GetListOfBranches(), additionalBranches=additionalBranches)
+    s1 = getTree(newtree, tree, tree.GetListOfBranches(), additionalBranches=additionalBranches)
 
     for j in range(len(leaves)):
         newBranch = newtree.Branch( leaves[j].split('/')[0] , leafValues[j], leaves[j])
 
     if 'gg' in fileName:
-      jet_index = 0
+      jet_index_start = 0
     elif 'qq' in fileName:
-      jet_index = 100000000
+      jet_index_start = 100000000
     elif 'WW' in fileName:
-      jet_index = 200000000
+      jet_index_start = 200000000
     elif 'ZZ' in fileName:
-      jet_index = 300000000
+      jet_index_start = 300000000
     elif 'tt' in fileName:
-      jet_index = 400000000
+      jet_index_start = 400000000
     else:
-      jet_index = 500000000
-
+      jet_index_start = 500000000
+      
     for i in range(events):
+        jet_index = jet_index_start+i
+        setattr(s1, 'j_index', jet_index)
         tree.GetEntry(i)
         isNaN = False
         if rt.TMath.IsNaN(tree.j_n2_b1_mmdt[0]) or rt.TMath.IsNaN(tree.j_n2_b1[0]) or rt.TMath.IsNaN(tree.j_tau32_b2_mmdt[0]) or rt.TMath.IsNaN(tree.j_tau32_b2[0]):
@@ -162,16 +167,18 @@ def addLeaves(tree,fileName):
             leafValues[4][0] = 1
         else:
             leafValues[5][0] = 1
+        leafValues[6][0] = jet_index
 
         for branch in tree.GetListOfBranches():
             if branch.GetName() in particleBranches: continue
             if tree.GetBranchStatus(branch.GetName()):
                 obj = getattr(tree, branch.GetName())
                 if hasattr(obj, "__getitem__"):
+                    #print(branch.GetName(),"getitem",obj[0])
                     setattr(s1, branch.GetName(), obj[0] )
                 else:
                     setattr(s1, branch.GetName(), obj )
-
+        
         if len(particleBranches)>0:
             nParticles = len(getattr(tree, particleBranches[0]))
             particleObj = [getattr(tree, branchName) for branchName in particleBranches]
@@ -210,14 +217,11 @@ def addLeaves(tree,fileName):
                 setattr(s1, 'j1_phirel', float(delta_phi(particlePhi[i_particle],jet.Phi())))
                 setattr(s1, 'j1_phirot', float(y[i_particle]))
                 setattr(s1, 'j1_deltaR', float(jet.DeltaR(particle)))
-                setattr(s1, 'j_index', jet_index)
                 newtree.Fill()
-            jet_index += 1
         else:
             newtree.Fill()
-    
         if i % 3000 == 0:
-            print("%s of %s: %s" % (i,events,leafValues))
+          print("%s of %s: %s" % (i,events,leafValues))
     newtree.Write()
     print("Saved tree with %s events . . ." % ( newtree.GetEntries() ))
     newfile.Close()
@@ -230,7 +234,7 @@ if __name__ == "__main__":
     (options,args) = parser.parse_args()
     
     for fileName in args:
-        tFile = rt.TFile.Open(fileName)
+        tFile = rt.TFile.Open(fileName,"read")
         tree = tFile.Get(options.tree)
         addLeaves(tree, fileName)
         tFile.Close()
