@@ -239,19 +239,19 @@ def linear_model(Inputs, nclasses, l1Reg=0):
 
 def conv1d_model(Inputs, nclasses, l1Reg=0):
     """
-    Conv1D model, kernel size 4
+    Conv1D model, kernel size 40
     """
-    x = Conv1D(filters=8, kernel_size=4, strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(Inputs)
-    x = Conv1D(filters=4, kernel_size=4, strides=2, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(x)
-    x = Conv1D(filters=2, kernel_size=4, strides=3, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
                activation = 'relu', W_regularizer=l1(l1Reg))(x)
     x = Flatten()(x)
-    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', 
+    x = Dense(50, activation='relu', kernel_initializer='lecun_uniform', 
               name='fc1_relu', W_regularizer=l1(l1Reg))(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
                         name='output_softmax', W_regularizer=l1(l1Reg))(x)
@@ -261,23 +261,23 @@ def conv1d_model(Inputs, nclasses, l1Reg=0):
 
 def conv1d_model_constraint(Inputs, nclasses, l1Reg=0, h5fName=None):
     """
-    Conv1D model, kernel size 4
+    Conv1D model, kernel size 40
     """
     h5f = h5py.File(h5fName)
-    x = Conv1D(filters=8, kernel_size=4, strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv1_relu',
                activation = 'relu', W_regularizer=l1(l1Reg), 
                kernel_constraint = zero_some_weights(binary_tensor=h5f['conv1_relu'][()].tolist()))(Inputs)
-    x = Conv1D(filters=4, kernel_size=4, strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv2_relu',
                activation = 'relu', W_regularizer=l1(l1Reg), 
                kernel_constraint = zero_some_weights(binary_tensor=h5f['conv2_relu'][()].tolist()))(x)
-    x = Conv1D(filters=2, kernel_size=4, strides=1, padding='same',
+    x = Conv1D(filters=32, kernel_size=40, strides=1, padding='same',
                kernel_initializer='he_normal', use_bias=True, name='conv3_relu',
                activation = 'relu', W_regularizer=l1(l1Reg), 
                kernel_constraint = zero_some_weights(binary_tensor=h5f['conv3_relu'][()].tolist()))(x)
     x = Flatten()(x)
-    x = Dense(32, activation='relu', kernel_initializer='lecun_uniform', 
+    x = Dense(50, activation='relu', kernel_initializer='lecun_uniform', 
               name='fc1_relu', W_regularizer=l1(l1Reg), 
               kernel_constraint = zero_some_weights(binary_tensor=h5f['fc1_relu'][()].tolist()))(x)
     predictions = Dense(nclasses, activation='softmax', kernel_initializer='lecun_uniform', 
