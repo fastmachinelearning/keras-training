@@ -1,6 +1,7 @@
 from keras.constraints import *
 from keras.layers.merge import multiply
 
+
 class ZeroSomeWeights(Constraint):
     """ZeroSomeWeights weight constraint.
 
@@ -16,11 +17,12 @@ class ZeroSomeWeights(Constraint):
 
     def __call__(self, w):
         if self.binary_tensor is not None:
-            w = multiply([w,  K.variable(value=self.binary_tensor)])
+            w = multiply([w, K.variable(value=self.binary_tensor)])
         return w
 
     def get_config(self):
-        return {'binary_tensor': self.binary_tensor}
+        return {"binary_tensor": self.binary_tensor}
+
 
 # Aliases.
 

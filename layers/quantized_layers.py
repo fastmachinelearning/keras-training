@@ -23,56 +23,68 @@ class Clip(constraints.Constraint):
         return K.clip(p, self.min_value, self.max_value)
 
     def get_config(self):
-        return {"min_value": self.min_value,
-                "max_value": self.max_value}
+        return {"min_value": self.min_value, "max_value": self.max_value}
 
 
 class BinaryDense(Dense):
-    ''' Binarized Dense layer
-    References: 
+    """Binarized Dense layer
+    References:
     "BinaryNet: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1" [http://arxiv.org/abs/1602.02830]
-    '''
-    def __init__(self, units, H=1., kernel_lr_multiplier='Glorot', bias_lr_multiplier=None, **kwargs):
+    """
+
+    def __init__(
+        self,
+        units,
+        H=1.0,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        **kwargs
+    ):
         super(BinaryDense, self).__init__(units, **kwargs)
         self.H = H
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
-        
+
         super(BinaryDense, self).__init__(units, **kwargs)
-    
+
     def build(self, input_shape):
         assert len(input_shape) >= 2
         input_dim = input_shape[1]
 
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             self.H = np.float32(np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot H: {}'.format(self.H))
-        if self.kernel_lr_multiplier == 'Glorot':
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
-            
+            # print('Glorot H: {}'.format(self.H))
+        if self.kernel_lr_multiplier == "Glorot":
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (input_dim + self.units))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
+
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=(input_dim, self.units),
-                                     initializer=self.kernel_initializer,
-                                     name='kernel',
-                                     regularizer=self.kernel_regularizer,
-                                     constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=(input_dim, self.units),
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight(shape=(self.output_dim,),
-                                     initializer=self.bias_initializer,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                shape=(self.output_dim,),
+                initializer=self.bias_initializer,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
             self.bias = None
 
         self.input_spec = InputSpec(min_ndim=2, axes={-1: input_dim})
         self.built = True
-
 
     def call(self, inputs):
         binary_kernel = binarize(self.kernel, H=self.H)
@@ -82,68 +94,84 @@ class BinaryDense(Dense):
         if self.activation is not None:
             output = self.activation(output)
         return output
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(BinaryDense, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
 class BinaryConv2D(Conv2D):
-    '''Binarized Convolution2D layer
-    References: 
+    """Binarized Convolution2D layer
+    References:
     "BinaryNet: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1" [http://arxiv.org/abs/1602.02830]
-    '''
-    def __init__(self, filters, kernel_lr_multiplier='Glorot', 
-                 bias_lr_multiplier=None, H=1., **kwargs):
+    """
+
+    def __init__(
+        self,
+        filters,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        H=1.0,
+        **kwargs
+    ):
         super(BinaryConv2D, self).__init__(filters, **kwargs)
         self.H = H
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
-        
-        
+
     def build(self, input_shape):
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             channel_axis = 1
         else:
-            channel_axis = -1 
+            channel_axis = -1
         if input_shape[channel_axis] is None:
-                raise ValueError('The channel dimension of the inputs '
-                                 'should be defined. Found `None`.')
+            raise ValueError(
+                "The channel dimension of the inputs "
+                "should be defined. Found `None`."
+            )
 
         input_dim = input_shape[channel_axis]
         kernel_shape = self.kernel_size + (input_dim, self.filters)
-            
+
         base = self.kernel_size[0] * self.kernel_size[1]
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
             self.H = np.float32(np.sqrt(1.5 / (nb_input + nb_output)))
-            #print('Glorot H: {}'.format(self.H))
-            
-        if self.kernel_lr_multiplier == 'Glorot':
+            # print('Glorot H: {}'.format(self.H))
+
+        if self.kernel_lr_multiplier == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5/ (nb_input + nb_output)))
-            #print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (nb_input + nb_output))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
 
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=kernel_shape,
-                                 initializer=self.kernel_initializer,
-                                 name='kernel',
-                                 regularizer=self.kernel_regularizer,
-                                 constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=kernel_shape,
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight((self.output_dim,),
-                                     initializer=self.bias_initializers,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                (self.output_dim,),
+                initializer=self.bias_initializers,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
 
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
@@ -154,75 +182,86 @@ class BinaryConv2D(Conv2D):
         self.built = True
 
     def call(self, inputs):
-        binary_kernel = binarize(self.kernel, H=self.H) 
+        binary_kernel = binarize(self.kernel, H=self.H)
         outputs = K.conv2d(
             inputs,
             binary_kernel,
             strides=self.strides,
             padding=self.padding,
             data_format=self.data_format,
-            dilation_rate=self.dilation_rate)
+            dilation_rate=self.dilation_rate,
+        )
 
         if self.use_bias:
-            outputs = K.bias_add(
-                outputs,
-                self.bias,
-                data_format=self.data_format)
+            outputs = K.bias_add(outputs, self.bias, data_format=self.data_format)
 
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(BinaryConv2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
-
-
 class TernaryDense(Dense):
-    ''' Ternarized Dense layer
+    """Ternarized Dense layer
 
-    References: 
+    References:
     - [Recurrent Neural Networks with Limited Numerical Precision](http://arxiv.org/abs/1608.06902}
     - [Ternary Weight Networks](http://arxiv.org/abs/1605.04711)
-    '''
-    def __init__(self, units, H=1., kernel_lr_multiplier='Glorot', bias_lr_multiplier=None, **kwargs):
+    """
+
+    def __init__(
+        self,
+        units,
+        H=1.0,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        **kwargs
+    ):
         super(TernaryDense, self).__init__(units, **kwargs)
         self.H = H
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
-        
-    
+
     def build(self, input_shape):
         assert len(input_shape) >= 2
         input_dim = input_shape[1]
 
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             self.H = np.float32(np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot H: {}'.format(self.H))
-        if self.kernel_lr_multiplier == 'Glorot':
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
-            
+            # print('Glorot H: {}'.format(self.H))
+        if self.kernel_lr_multiplier == "Glorot":
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (input_dim + self.units))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
+
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=(input_dim, self.units),
-                                     initializer=self.kernel_initializer,
-                                     name='kernel',
-                                     regularizer=self.kernel_regularizer,
-                                     constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=(input_dim, self.units),
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight(shape=(self.output_dim,),
-                                     initializer=self.bias_initializer,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                shape=(self.output_dim,),
+                initializer=self.bias_initializer,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
             self.bias = None
@@ -238,68 +277,85 @@ class TernaryDense(Dense):
         if self.activation is not None:
             output = self.activation(output)
         return output
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(TernaryDense, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
 class TernaryConv2D(Conv2D):
-    '''Ternarized Convolution2D layer
-    References: 
+    """Ternarized Convolution2D layer
+    References:
     - [Recurrent Neural Networks with Limited Numerical Precision](http://arxiv.org/abs/1608.06902}
     - [Ternary Weight Networks](http://arxiv.org/abs/1605.04711)
-    '''
-    def __init__(self, filters, kernel_lr_multiplier='Glorot', 
-                 bias_lr_multiplier=None, H=1., **kwargs):
+    """
+
+    def __init__(
+        self,
+        filters,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        H=1.0,
+        **kwargs
+    ):
         super(TernaryConv2D, self).__init__(filters, **kwargs)
         self.H = H
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
-        
+
     def build(self, input_shape):
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             channel_axis = 1
         else:
-            channel_axis = -1 
+            channel_axis = -1
         if input_shape[channel_axis] is None:
-                raise ValueError('The channel dimension of the inputs '
-                                 'should be defined. Found `None`.')
+            raise ValueError(
+                "The channel dimension of the inputs "
+                "should be defined. Found `None`."
+            )
 
         input_dim = input_shape[channel_axis]
         kernel_shape = self.kernel_size + (input_dim, self.filters)
-            
+
         base = self.kernel_size[0] * self.kernel_size[1]
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
             self.H = np.float32(np.sqrt(1.5 / (nb_input + nb_output)))
-            #print('Glorot H: {}'.format(self.H))
-            
-        if self.kernel_lr_multiplier == 'Glorot':
+            # print('Glorot H: {}'.format(self.H))
+
+        if self.kernel_lr_multiplier == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5/ (nb_input + nb_output)))
-            #print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (nb_input + nb_output))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
 
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=kernel_shape,
-                                 initializer=self.kernel_initializer,
-                                 name='kernel',
-                                 regularizer=self.kernel_regularizer,
-                                 constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=kernel_shape,
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight((self.output_dim,),
-                                     initializer=self.bias_initializers,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                (self.output_dim,),
+                initializer=self.bias_initializers,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
 
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
@@ -310,39 +366,40 @@ class TernaryConv2D(Conv2D):
         self.built = True
 
     def call(self, inputs):
-        ternary_kernel = ternarize(self.kernel, H=self.H) 
+        ternary_kernel = ternarize(self.kernel, H=self.H)
         outputs = K.conv2d(
             inputs,
             ternary_kernel,
             strides=self.strides,
             padding=self.padding,
             data_format=self.data_format,
-            dilation_rate=self.dilation_rate)
+            dilation_rate=self.dilation_rate,
+        )
 
         if self.use_bias:
-            outputs = K.bias_add(
-                outputs,
-                self.bias,
-                data_format=self.data_format)
+            outputs = K.bias_add(outputs, self.bias, data_format=self.data_format)
 
         if self.activation is not None:
             return self.activation(outputs)
         return outputs
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(TernaryConv2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
 class TernaryRNN(SimpleRNN):
-    ''' Ternarized RNN layer
+    """Ternarized RNN layer
 
-    References: 
+    References:
     - [Recurrent Neural Networks with Limited Numerical Precision](http://arxiv.org/abs/1608.06902}
-    '''
+    """
+
     def preprocess_input(self, inputs, training=None):
         return inputs
 
@@ -377,12 +434,10 @@ class TernaryRNN(SimpleRNN):
             def dropped_inputs():
                 return K.dropout(ones, self.dropout)
 
-            dp_mask = K.in_train_phase(dropped_inputs,
-                                       ones,
-                                       training=training)
+            dp_mask = K.in_train_phase(dropped_inputs, ones, training=training)
             constants.append(dp_mask)
         else:
-            constants.append(K.cast_to_floatx(1.))
+            constants.append(K.cast_to_floatx(1.0))
 
         if 0 < self.recurrent_dropout < 1:
             ones = K.ones_like(K.reshape(inputs[:, 0, 0], (-1, 1)))
@@ -390,62 +445,74 @@ class TernaryRNN(SimpleRNN):
 
             def dropped_inputs():
                 return K.dropout(ones, self.recurrent_dropout)
-            rec_dp_mask = K.in_train_phase(dropped_inputs,
-                                           ones,
-                                           training=training)
+
+            rec_dp_mask = K.in_train_phase(dropped_inputs, ones, training=training)
             constants.append(rec_dp_mask)
         else:
-            constants.append(K.cast_to_floatx(1.))
+            constants.append(K.cast_to_floatx(1.0))
         return constants
 
 
-
 class QuantizedDense(Dense):
-    ''' Binarized Dense layer
-    References: 
+    """Binarized Dense layer
+    References:
     "QuantizedNet: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1" [http://arxiv.org/abs/1602.02830]
-    '''
-    def __init__(self, units, H=1., nb=16, kernel_lr_multiplier='Glorot', bias_lr_multiplier=None, **kwargs):
+    """
+
+    def __init__(
+        self,
+        units,
+        H=1.0,
+        nb=16,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        **kwargs
+    ):
         super(QuantizedDense, self).__init__(units, **kwargs)
         self.H = H
         self.nb = nb
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
         super(QuantizedDense, self).__init__(units, **kwargs)
-    
+
     def build(self, input_shape):
         assert len(input_shape) >= 2
         input_dim = input_shape[1]
 
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             self.H = np.float32(np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot H: {}'.format(self.H))
-        if self.kernel_lr_multiplier == 'Glorot':
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5 / (input_dim + self.units)))
-            #print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
-            
+            # print('Glorot H: {}'.format(self.H))
+        if self.kernel_lr_multiplier == "Glorot":
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (input_dim + self.units))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.kernel_lr_multiplier))
+
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=(input_dim, self.units),
-                                     initializer=self.kernel_initializer,
-                                     name='kernel',
-                                     regularizer=self.kernel_regularizer,
-                                     constraint=self.kernel_constraint)
+        self.kernel = self.add_weight(
+            shape=(input_dim, self.units),
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight(shape=(self.units,),
-                                     initializer=self.bias_initializer,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                shape=(self.units,),
+                initializer=self.bias_initializer,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
             self.bias = None
 
         self.input_spec = InputSpec(min_ndim=2, axes={-1: input_dim})
         self.built = True
-
 
     def call(self, inputs):
         quantized_kernel = quantize(self.kernel, nb=self.nb)
@@ -455,74 +522,92 @@ class QuantizedDense(Dense):
         if self.activation is not None:
             output = self.activation(output)
 
-
         return output
-        
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(QuantizedDense, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
 
 class QuantizedConv2D(Conv2D):
-    '''Binarized Convolution2D layer
-    References: 
+    """Binarized Convolution2D layer
+    References:
     "QuantizedNet: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1" [http://arxiv.org/abs/1602.02830]
-    '''
-    def __init__(self, filters, kernel_regularizer=None,activity_regularizer=None, kernel_lr_multiplier='Glorot',
-                 bias_lr_multiplier=None, H=1., nb=16,  **kwargs):
+    """
+
+    def __init__(
+        self,
+        filters,
+        kernel_regularizer=None,
+        activity_regularizer=None,
+        kernel_lr_multiplier="Glorot",
+        bias_lr_multiplier=None,
+        H=1.0,
+        nb=16,
+        **kwargs
+    ):
         super(QuantizedConv2D, self).__init__(filters, **kwargs)
         self.H = H
         self.nb = nb
         self.kernel_lr_multiplier = kernel_lr_multiplier
         self.bias_lr_multiplier = bias_lr_multiplier
-        self.activity_regularizer =activity_regularizer
+        self.activity_regularizer = activity_regularizer
         self.kernel_regularizer = kernel_regularizer
-        
+
     def build(self, input_shape):
-        if self.data_format == 'channels_first':
+        if self.data_format == "channels_first":
             channel_axis = 1
         else:
-            channel_axis = -1 
+            channel_axis = -1
         if input_shape[channel_axis] is None:
-                raise ValueError('The channel dimension of the inputs '
-                                 'should be defined. Found `None`.')
+            raise ValueError(
+                "The channel dimension of the inputs "
+                "should be defined. Found `None`."
+            )
 
         input_dim = input_shape[channel_axis]
         kernel_shape = self.kernel_size + (input_dim, self.filters)
-            
+
         base = self.kernel_size[0] * self.kernel_size[1]
-        if self.H == 'Glorot':
+        if self.H == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
             self.H = np.float32(np.sqrt(1.5 / (nb_input + nb_output)))
-            #print('Glorot H: {}'.format(self.H))
-            
-        if self.kernel_lr_multiplier == 'Glorot':
+            # print('Glorot H: {}'.format(self.H))
+
+        if self.kernel_lr_multiplier == "Glorot":
             nb_input = int(input_dim * base)
             nb_output = int(self.filters * base)
-            self.kernel_lr_multiplier = np.float32(1. / np.sqrt(1.5/ (nb_input + nb_output)))
-            #print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
+            self.kernel_lr_multiplier = np.float32(
+                1.0 / np.sqrt(1.5 / (nb_input + nb_output))
+            )
+            # print('Glorot learning rate multiplier: {}'.format(self.lr_multiplier))
 
         self.kernel_constraint = Clip(-self.H, self.H)
         self.kernel_initializer = initializers.RandomUniform(-self.H, self.H)
-        #self.bias_initializer = initializers.RandomUniform(-self.H, self.H)
-        self.kernel = self.add_weight(shape=kernel_shape,
-                                 initializer=self.kernel_initializer,
-                                 name='kernel',
-                                 regularizer=self.kernel_regularizer,
-                                 constraint=self.kernel_constraint)
+        # self.bias_initializer = initializers.RandomUniform(-self.H, self.H)
+        self.kernel = self.add_weight(
+            shape=kernel_shape,
+            initializer=self.kernel_initializer,
+            name="kernel",
+            regularizer=self.kernel_regularizer,
+            constraint=self.kernel_constraint,
+        )
 
         if self.use_bias:
             self.lr_multipliers = [self.kernel_lr_multiplier, self.bias_lr_multiplier]
-            self.bias = self.add_weight((self.filters,),
-                                     initializer=self.bias_initializer,
-                                     name='bias',
-                                     regularizer=self.bias_regularizer,
-                                     constraint=self.bias_constraint)
+            self.bias = self.add_weight(
+                (self.filters,),
+                initializer=self.bias_initializer,
+                name="bias",
+                regularizer=self.bias_regularizer,
+                constraint=self.bias_constraint,
+            )
 
         else:
             self.lr_multipliers = [self.kernel_lr_multiplier]
@@ -535,9 +620,11 @@ class QuantizedConv2D(Conv2D):
     def call(self, inputs):
         quantized_kernel = quantize(self.kernel, nb=self.nb)
 
-        inverse_kernel_lr_multiplier = 1./self.kernel_lr_multiplier
-        inputs_qnn_gradient = (inputs - (1. - 1./inverse_kernel_lr_multiplier) * K.stop_gradient(inputs))\
-                  * inverse_kernel_lr_multiplier
+        inverse_kernel_lr_multiplier = 1.0 / self.kernel_lr_multiplier
+        inputs_qnn_gradient = (
+            inputs
+            - (1.0 - 1.0 / inverse_kernel_lr_multiplier) * K.stop_gradient(inputs)
+        ) * inverse_kernel_lr_multiplier
 
         outputs_qnn_gradient = K.conv2d(
             inputs_qnn_gradient,
@@ -545,36 +632,36 @@ class QuantizedConv2D(Conv2D):
             strides=self.strides,
             padding=self.padding,
             data_format=self.data_format,
-            dilation_rate=self.dilation_rate)
+            dilation_rate=self.dilation_rate,
+        )
 
-        outputs = (outputs_qnn_gradient - (1. - 1./self.kernel_lr_multiplier) * K.stop_gradient(outputs_qnn_gradient))\
-                  * self.kernel_lr_multiplier
+        outputs = (
+            outputs_qnn_gradient
+            - (1.0 - 1.0 / self.kernel_lr_multiplier)
+            * K.stop_gradient(outputs_qnn_gradient)
+        ) * self.kernel_lr_multiplier
 
-
-        #outputs = outputs*K.mean(K.abs(self.kernel))
+        # outputs = outputs*K.mean(K.abs(self.kernel))
 
         if self.use_bias:
-            outputs = K.bias_add(
-                outputs,
-                self.bias,
-                data_format=self.data_format)
+            outputs = K.bias_add(outputs, self.bias, data_format=self.data_format)
 
         if self.activation is not None:
             return self.activation(outputs)
 
         return outputs
-        
+
     def get_config(self):
-        config = {'H': self.H,
-                  'kernel_lr_multiplier': self.kernel_lr_multiplier,
-                  'bias_lr_multiplier': self.bias_lr_multiplier}
+        config = {
+            "H": self.H,
+            "kernel_lr_multiplier": self.kernel_lr_multiplier,
+            "bias_lr_multiplier": self.bias_lr_multiplier,
+        }
         base_config = super(QuantizedConv2D, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
+
 
 # Aliases
 BinaryConvolution2D = BinaryConv2D
 TernaryConvolution2D = TernaryConv2D
 QuantizedConvolution2D = QuantizedConv2D
-
-
-
