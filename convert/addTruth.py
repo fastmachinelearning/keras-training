@@ -4,7 +4,6 @@ from array import array
 import random
 import os
 import argparse
-import sys
 import numpy as np
 
 
@@ -159,7 +158,7 @@ def addLeaves(tree, fileName):
     )
 
     for j in range(len(leaves)):
-        newBranch = newtree.Branch(leaves[j].split("/")[0], leafValues[j], leaves[j])
+        _ = newtree.Branch(leaves[j].split("/")[0], leafValues[j], leaves[j])
 
     if "gg" in fileName:
         jet_index_start = 0
@@ -302,7 +301,7 @@ if __name__ == "__main__":
         "-t",
         "--tree",
         action="store",
-        type=string,
+        type=str,
         dest="tree",
         default="t_allpar",
         help="tree name",

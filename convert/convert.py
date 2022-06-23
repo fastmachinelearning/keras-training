@@ -1,8 +1,6 @@
 from __future__ import print_function
-from root_numpy import root2array, tree2array
-from root_numpy import testdata
+from root_numpy import root2array
 import h5py
-import ROOT as rt
 from sklearn.utils import shuffle
 import argparse
 
@@ -27,8 +25,9 @@ if __name__ == "__main__":
         default=None,
         help="seed",
     )
-    parser.add_argument('fileNames', metavar='N', type=str, nargs='+',
-                    help='file name to convert')
+    parser.add_argument(
+        "fileNames", metavar="N", type=str, nargs="+", help="file name to convert"
+    )
     args = parser.parse_args()
 
     for fileName in args.fileNames:

@@ -2,30 +2,24 @@ import os
 import h5py
 import numpy as np
 import pandas as pd
-import math
-import sys
-import itertools
 import argparse
+
 # import setGPU
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--minVal", type=int, default=0, help="min value"
-)
-parser.add_argument(
-    "--maxVal", type=int, default=100, help="max value"
-)
+parser.add_argument("--minVal", type=int, default=0, help="min value")
+parser.add_argument("--maxVal", type=int, default=100, help="max value")
 parser.add_argument(
     "--nConstituents", type=int, default=100, help="number of constituents"
 )
-parser.add_argument('fileNames', metavar='N', type=str, nargs='+', help='file name to convert')
+parser.add_argument(
+    "fileNames", metavar="N", type=str, nargs="+", help="file name to convert"
+)
 
 args = parser.parse_args()
 
 fileName = args.fileNames[0]
-f = h5py.File(
-    fileName
-)
+f = h5py.File(fileName)
 d = f["t_allpar_new"][()]
 features = d.dtype.names
 
@@ -130,8 +124,10 @@ for i in range(args.minVal, args.maxVal):
 jets = jets.reshape((jetImage.shape[0], len(jet_features)))
 
 fOUT = h5py.File(
-    os.path.join(os.path.dirname(fileName), 
-    "jetImage_1evt_%i_%i.h5" % (args.minVal, args.maxVal)), "w"
+    os.path.join(
+        os.path.dirname(fileName), "jetImage_1evt_%i_%i.h5" % (args.minVal, args.maxVal)
+    ),
+    "w",
 )
 fOUT.create_dataset("jetImage", data=jetImage, compression="gzip")
 fOUT.create_dataset("jetImageRotated", data=jetImageRotated, compression="gzip")

@@ -29,8 +29,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--split", action="store", type=int, dest="split", default=10, help="split"
     )
-    parser.add_argument('fileNames', metavar='N', type=str, nargs='+',
-                    help='file name to convert')
+    parser.add_argument(
+        "fileNames", metavar="N", type=str, nargs="+", help="file name to convert"
+    )
     args = parser.parse_args()
 
     np.random.seed(args.seed)
@@ -38,7 +39,7 @@ if __name__ == "__main__":
         upfile = uproot.open(fileName)
         tree = upfile[args.tree]
 
-        df = tree.arrays(library='pd')
+        df = tree.arrays(library="pd")
         df = df.sample(frac=1)
         dfArrays = [
             g.sort_values("j1_pt", axis=0, ascending=False)
